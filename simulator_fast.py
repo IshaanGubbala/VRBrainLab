@@ -28,24 +28,37 @@ class SimulationConfig:
     transient: float = 200.0  # Transient period to discard (ms)
 
     # Coupling parameters
-    global_coupling: float = 1.0  # Global coupling strength (optimized for stability)
+    global_coupling: float = 0.9  # Balanced between stability and sensitivity
     conduction_velocity: float = 3.0  # Axonal conduction velocity (mm/ms)
 
     # Neural mass model parameters (Wilson-Cowan-like)
     tau_e: float = 10.0  # Excitatory time constant (ms)
     tau_i: float = 20.0  # Inhibitory time constant (ms)
-    c_ee: float = 16.0  # E→E coupling
-    c_ei: float = 12.0  # E→I coupling
-    c_ie: float = 15.0  # I→E coupling
+    c_ee: float = 8.0  # E→E coupling (further reduced to prevent runaway)
+    c_ei: float = 16.0  # E→I coupling (increased for inhibition)
+    c_ie: float = 20.0  # I→E coupling (strong inhibitory feedback)
     c_ii: float = 3.0   # I→I coupling
-    I_ext: float = 1.5  # External input current (tuned for mid-range activity)
-    noise_strength: float = 0.04  # Noise amplitude (increased for fluctuations)
+    I_ext: float = 1.15  # External drive (increased to compensate for lower c_ee)
+    noise_strength: float = 0.10  # Noise for fluctuations
 
     # Activation function parameters (sigmoid)
-    a_e: float = 1.3  # Excitatory gain
-    theta_e: float = 3.5  # Excitatory threshold (balanced)
-    a_i: float = 2.0  # Inhibitory gain
-    theta_i: float = 3.0  # Inhibitory threshold (balanced)
+    a_e: float = 0.7  # Reduced gain for smoother transitions
+    theta_e: float = 3.0  # Lower threshold with gentler sigmoid
+    a_i: float = 1.0  # Reduced inhibitory gain
+    theta_i: float = 2.5  # Adjusted relative to theta_e
+
+    # Heterogeneity controls
+    i_ext_heterogeneity: float = 0.0  # Fractional std for region-wise I_ext jitter
+    theta_e_heterogeneity: float = 0.0  # Absolute std for region-wise theta_e jitter
+    delay_jitter_pct: float = 0.0  # Fractional jitter on delays (0.1 = ±10%)
+    heterogeneity_seed: Optional[int] = None  # Seed for reproducible jitter
+
+    # Temporal modulation / colored noise
+    use_ou_noise: bool = False  # Use Ornstein-Uhlenbeck colored noise instead of pure white
+    ou_tau: float = 50.0  # OU time constant (ms)
+    ou_sigma: float = 0.4  # OU noise amplitude
+    slow_drive_sigma: float = 0.0  # Slow common drive amplitude (OU)
+    slow_drive_tau: float = 500.0  # Slow drive time constant (ms)
 
 
 class NeuralMassModel:
@@ -54,8 +67,12 @@ class NeuralMassModel:
     Vectorized for all regions simultaneously.
     """
 
-    def __init__(self, config: SimulationConfig):
+    def __init__(self, config: SimulationConfig,
+                 region_I_ext: np.ndarray,
+                 region_theta_e: np.ndarray):
         self.config = config
+        self.region_I_ext = region_I_ext
+        self.region_theta_e = region_theta_e
 
     def sigmoid(self, x: np.ndarray, a: float, theta: float) -> np.ndarray:
         """Sigmoid activation function."""
@@ -78,18 +95,18 @@ class NeuralMassModel:
 
         c = self.config
 
-        # Excitatory input to E population
-        input_E = (c.c_ee * self.sigmoid(E, c.a_e, c.theta_e) -
+        # Excitatory input to E population (per-region heterogeneity)
+        input_E = (c.c_ee * self.sigmoid(E, c.a_e, self.region_theta_e) -
                    c.c_ie * self.sigmoid(I, c.a_i, c.theta_i) +
-                   c.I_ext + coupling + noise[:, 0])
+                   self.region_I_ext + coupling + noise[:, 0])
 
-        # Excitatory input to I population
-        input_I = (c.c_ei * self.sigmoid(E, c.a_e, c.theta_e) -
+        # Excitatory input to I population (share region-specific drive)
+        input_I = (c.c_ei * self.sigmoid(E, c.a_e, self.region_theta_e) -
                    c.c_ii * self.sigmoid(I, c.a_i, c.theta_i) +
-                   c.I_ext + noise[:, 1])
+                   self.region_I_ext + noise[:, 1])
 
         # Rate of change
-        dE = (-E + self.sigmoid(input_E, c.a_e, c.theta_e)) / c.tau_e
+        dE = (-E + self.sigmoid(input_E, c.a_e, self.region_theta_e)) / c.tau_e
         dI = (-I + self.sigmoid(input_I, c.a_i, c.theta_i)) / c.tau_i
 
         return np.stack([dE, dI], axis=1)
@@ -116,6 +133,9 @@ class BrainNetworkSimulator:
         self.config = config or SimulationConfig()
         self.connectivity_data = connectivity_data
 
+        # RNG for heterogeneity
+        self.rng = np.random.default_rng(config.heterogeneity_seed if config else None)
+
         # Extract connectivity data
         self.weights = connectivity_data['weights']
         self.tract_lengths = connectivity_data['tract_lengths']
@@ -131,8 +151,12 @@ class BrainNetworkSimulator:
         # PRE-COMPUTE OPTIMIZED COUPLING STRUCTURE
         self._prepare_fast_coupling()
 
+        # Region-specific heterogeneity
+        self.region_I_ext = self._build_region_I_ext()
+        self.region_theta_e = self._build_region_theta_e()
+
         # Initialize neural mass model
-        self.model = NeuralMassModel(self.config)
+        self.model = NeuralMassModel(self.config, self.region_I_ext, self.region_theta_e)
 
         # Simulation state
         self.state = None
@@ -163,6 +187,13 @@ class BrainNetworkSimulator:
         # Delay (ms) = length (mm) / velocity (mm/ms)
         delay_ms = self.tract_lengths / self.config.conduction_velocity
 
+        # Optional jitter to break synchrony
+        if self.config.delay_jitter_pct > 0:
+            jitter_range = self.config.delay_jitter_pct
+            jitter = self.rng.uniform(-jitter_range, jitter_range, size=delay_ms.shape)
+            delay_ms = delay_ms * (1.0 + jitter)
+            delay_ms = np.clip(delay_ms, self.config.dt, None)
+
         # Convert to timesteps
         delay_steps = np.round(delay_ms / self.config.dt).astype(int)
 
@@ -190,6 +221,22 @@ class BrainNetworkSimulator:
 
         # Maximum delay for buffer size
         self.max_delay = int(np.max(self.delays))
+
+    def _build_region_I_ext(self) -> np.ndarray:
+        """Build per-region external drive with optional heterogeneity."""
+        base = np.full(self.num_regions, self.config.I_ext)
+        if self.config.i_ext_heterogeneity > 0:
+            jitter = self.rng.normal(0, self.config.i_ext_heterogeneity, size=self.num_regions)
+            base = base * (1.0 + jitter)
+        return np.clip(base, 0.0, None)
+
+    def _build_region_theta_e(self) -> np.ndarray:
+        """Build per-region excitatory threshold with optional heterogeneity."""
+        base = np.full(self.num_regions, self.config.theta_e)
+        if self.config.theta_e_heterogeneity > 0:
+            jitter = self.rng.normal(0, self.config.theta_e_heterogeneity, size=self.num_regions)
+            base = base + jitter
+        return base
 
     def initialize_state(self, initial_state: Optional[np.ndarray] = None) -> None:
         """
@@ -268,16 +315,31 @@ class BrainNetworkSimulator:
         # Preallocate output arrays
         self.activity_history = np.zeros((num_save_steps, self.num_regions, 2))
 
-        # Pre-generate all noise (faster than generating each step)
-        all_noise = (self.config.noise_strength *
-                     np.random.randn(num_steps, self.num_regions, 2))
+        # Noise states
+        ou_noise = np.zeros((self.num_regions, 2))
+        slow_drive = np.zeros(self.num_regions)
 
         # Integration loop (Euler method) - OPTIMIZED
         save_counter = 0
 
         for step in range(num_steps):
-            # Get noise for this step
-            noise = all_noise[step]
+            # Base white noise
+            noise = self.config.noise_strength * self.rng.standard_normal((self.num_regions, 2))
+
+            # OU colored noise (per E/I)
+            if self.config.use_ou_noise:
+                ou_noise += (-ou_noise * (self.config.dt / self.config.ou_tau) +
+                             np.sqrt(2 * self.config.dt / self.config.ou_tau) *
+                             self.config.ou_sigma * self.rng.standard_normal((self.num_regions, 2)))
+                noise += ou_noise
+
+            # Slow common drive (per region, shared to E/I)
+            if self.config.slow_drive_sigma > 0:
+                slow_drive += (-slow_drive * (self.config.dt / self.config.slow_drive_tau) +
+                               np.sqrt(2 * self.config.dt / self.config.slow_drive_tau) *
+                               self.config.slow_drive_sigma * self.rng.standard_normal(self.num_regions))
+                noise[:, 0] += slow_drive
+                noise[:, 1] += slow_drive
 
             # Get delayed coupling input (FAST VERSION)
             coupling = self._get_delayed_coupling_fast(step)
