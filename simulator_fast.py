@@ -122,7 +122,8 @@ class BrainNetworkSimulator:
     3. Efficient circular buffer indexing
     """
 
-    def __init__(self, connectivity_data: Dict, config: Optional[SimulationConfig] = None):
+    def __init__(self, connectivity_data: Dict, config: Optional[SimulationConfig] = None,
+                 verbose: bool = True):
         """
         Initialize the brain simulator.
 
@@ -131,6 +132,7 @@ class BrainNetworkSimulator:
             config: Simulation configuration
         """
         self.config = config or SimulationConfig()
+        self.verbose = verbose
         self.connectivity_data = connectivity_data
 
         # RNG for heterogeneity
@@ -163,12 +165,13 @@ class BrainNetworkSimulator:
         self.time_points = None
         self.activity_history = None
 
-        print(f"Initialized FAST BrainNetworkSimulator:")
-        print(f"  - {self.num_regions} regions")
-        print(f"  - {self.num_connections} connections")
-        print(f"  - Max delay: {np.max(self.delays):.1f} ms")
-        print(f"  - dt: {self.config.dt} ms")
-        print(f"  - Optimizations: ENABLED")
+        if self.verbose:
+            print(f"Initialized FAST BrainNetworkSimulator:")
+            print(f"  - {self.num_regions} regions")
+            print(f"  - {self.num_connections} connections")
+            print(f"  - Max delay: {np.max(self.delays):.1f} ms")
+            print(f"  - dt: {self.config.dt} ms")
+            print(f"  - Optimizations: ENABLED")
 
     def _normalize_weights(self, weights: np.ndarray) -> np.ndarray:
         """Normalize connectivity weights to prevent runaway dynamics."""
@@ -286,7 +289,8 @@ class BrainNetworkSimulator:
     def run_simulation(self,
                       initial_state: Optional[np.ndarray] = None,
                       save_interval: int = 1,
-                      progress_callback: Optional[Callable] = None) -> Dict:
+                      progress_callback: Optional[Callable] = None,
+                      suppress_output: bool = False) -> Dict:
         """
         Run the brain network simulation (OPTIMIZED VERSION).
 
@@ -298,9 +302,10 @@ class BrainNetworkSimulator:
         Returns:
             Dictionary with simulation results
         """
-        print(f"\nRunning FAST simulation:")
-        print(f"  Duration: {self.config.duration} ms")
-        print(f"  dt: {self.config.dt} ms")
+        if self.verbose and not suppress_output:
+            print(f"\nRunning FAST simulation:")
+            print(f"  Duration: {self.config.duration} ms")
+            print(f"  dt: {self.config.dt} ms")
 
         start_time = time.time()
 
@@ -369,7 +374,8 @@ class BrainNetworkSimulator:
 
         elapsed = time.time() - start_time
         steps_per_sec = num_steps / elapsed
-        print(f"✓ Simulation complete in {elapsed:.2f} seconds ({steps_per_sec:.0f} steps/sec)")
+        if self.verbose and not suppress_output:
+            print(f"✓ Simulation complete in {elapsed:.2f} seconds ({steps_per_sec:.0f} steps/sec)")
 
         # Remove transient period
         transient_steps = int(self.config.transient / (self.config.dt * save_interval))

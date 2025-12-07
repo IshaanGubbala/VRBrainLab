@@ -131,3 +131,16 @@ Your VR Brain Lab is clean, optimized, and ready!
 Next: Run "python test.py" to verify
 
 ========================================
+
+
+
+ python auto_tuner.py --quick --jobs 8 --until-target --target-score 2.0 \
+    --duration 1400 --transient 200 --save-interval 4 \
+    --coupling-start 0.35 --coupling-stop 0.85 --coupling-steps 4 \
+    --i-ext-start 1.0 --i-ext-stop 1.8 --i-ext-steps 4 \
+    --ratio-start 0.9 --ratio-stop 1.2 --ratio-steps 2 \
+    --noise-min 0.16 --noise-max 0.22 --noise-steps 2 \
+    --i-ext-hetero-min 0.10 --i-ext-hetero-max 0.25 --hetero-steps 2 \
+    --theta-hetero-min 0.25 --theta-hetero-max 0.45 \
+    --delay-jitter-min 0.20 --delay-jitter-max 0.35 --delay-steps 2 \
+    --use-ou-noise --ou-sigma 0.45 --slow-drive-sigma 0.28 --slow-drive-tau 800
