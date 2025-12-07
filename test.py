@@ -20,6 +20,7 @@ Usage:
 
 import argparse
 import contextlib
+from contextlib import nullcontext
 import os
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -207,8 +208,14 @@ def _sweep_worker(job: Dict[str, Any]) -> Dict[str, Any]:
 
     try:
         simulator = BrainNetworkSimulator(brain, config)
-        with open(os.devnull, "w") as devnull, contextlib.redirect_stdout(devnull):
+        stdout_ctx = nullcontext()
+        if job.get("suppress_output", False):
+            devnull = open(os.devnull, "w")
+            stdout_ctx = contextlib.redirect_stdout(devnull)
+        with stdout_ctx:
             results = simulator.run_simulation(save_interval=save_interval)
+        if job.get("suppress_output", False):
+            devnull.close()
         metrics = summarize_dynamics(results["E"], config.dt)
         return {
             "job_idx": job_idx,
@@ -305,6 +312,7 @@ def run_parameter_sweep(args: argparse.Namespace) -> None:
                     "cfg": cfg,
                     "brain": brain,
                     "seed": seed,
+                    "suppress_output": args.executor == "process",
                 })
                 job_idx += 1
 
