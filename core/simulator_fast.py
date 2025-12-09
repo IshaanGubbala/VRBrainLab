@@ -28,40 +28,41 @@ class SimulationConfig:
     transient: float = 200.0  # Transient period to discard (ms)
 
     # Coupling parameters
-    global_coupling: float = 0.45  # More realistic moderate coupling
+    global_coupling: float = 0.792  # More realistic moderate coupling
     conduction_velocity: float = 3.0  # Axonal conduction velocity (mm/ms)
 
     # Neural mass model parameters (Wilson-Cowan-like)
     tau_e: float = 10.0  # Excitatory time constant (ms)
     tau_i: float = 20.0  # Inhibitory time constant (ms)
-    c_ee: float = 10.0  # E→E coupling
+    c_ee: float = 8.841  # E→E coupling
     c_ei: float = 12.0  # E→I coupling
-    c_ie: float = 18.0  # I→E coupling
+    c_ie: float = 16.796  # I→E coupling
     c_ii: float = 3.0   # I→I coupling
-    I_ext: float = 1.0  # External drive
-    noise_strength: float = 0.12  # Noise for fluctuations
+    I_ext: float = 0.860  # External drive
+    noise_strength: float = 0.132  # Noise for fluctuations
 
     # Activation function parameters (sigmoid)
     a_e: float = 0.7  # Reduced gain for smoother transitions
-    theta_e: float = 3.0  # Lower threshold with gentler sigmoid
+    theta_e: float = 2.821  # Lower threshold with gentler sigmoid
     a_i: float = 1.0  # Reduced inhibitory gain
     theta_i: float = 2.5  # Adjusted relative to theta_e
 
     # Heterogeneity controls
     i_ext_heterogeneity: float = 0.15  # Fractional std for region-wise I_ext jitter
     theta_e_heterogeneity: float = 0.25  # Absolute std for region-wise theta_e jitter
-    delay_jitter_pct: float = 0.15  # Fractional jitter on delays (0.1 = ±10%)
+    delay_jitter_pct: float = 0.144  # Fractional jitter on delays (0.1 = ±10%)
     heterogeneity_seed: Optional[int] = None  # Seed for reproducible jitter
 
     # Temporal modulation / colored noise
     use_ou_noise: bool = True  # Use Ornstein-Uhlenbeck colored noise instead of pure white
     ou_tau: float = 60.0  # OU time constant (ms)
     ou_sigma: float = 0.5  # OU noise amplitude
-    slow_drive_sigma: float = 0.35  # Slow common drive amplitude (OU)
+    slow_drive_sigma: float = 0.611  # Slow common drive amplitude (OU)
     slow_drive_tau: float = 800.0  # Slow drive time constant (ms)
     global_noise_frac: float = 0.05  # Fraction of noise that is shared across regions (0-1)
     sin_drive_amp: float = 0.03  # Amplitude of sinusoidal drive (added to both E/I)
     sin_drive_freq_hz: float = 10.0  # Frequency of sinusoidal drive (Hz)
+    backend: str = "numpy"  # "numpy" (default) or "torch" (experimental)
 
 
 class NeuralMassModel:
@@ -136,6 +137,20 @@ class BrainNetworkSimulator:
         """
         self.config = config or SimulationConfig()
         self.verbose = verbose
+        self.backend = self.config.backend.lower()
+        self.use_torch = self.backend == "torch"
+        self.torch = None
+        self.device = None
+        if self.use_torch:
+            try:
+                import torch  # type: ignore
+                self.torch = torch
+                if torch.backends.mps.is_available():
+                    self.device = torch.device("mps")
+                else:
+                    self.device = torch.device("cpu")
+            except Exception as exc:
+                raise ImportError("Torch backend requested but torch not available") from exc
         self.connectivity_data = connectivity_data
 
         # RNG for heterogeneity
@@ -160,8 +175,16 @@ class BrainNetworkSimulator:
         self.region_I_ext = self._build_region_I_ext()
         self.region_theta_e = self._build_region_theta_e()
 
-        # Initialize neural mass model
-        self.model = NeuralMassModel(self.config, self.region_I_ext, self.region_theta_e)
+        if self.use_torch:
+            self.region_I_ext_t = self.torch.tensor(self.region_I_ext, dtype=self.torch.float32, device=self.device)
+            self.region_theta_e_t = self.torch.tensor(self.region_theta_e, dtype=self.torch.float32, device=self.device)
+            self.coupling_sources_t = self.torch.tensor(self.coupling_sources, device=self.device)
+            self.coupling_targets_t = self.torch.tensor(self.coupling_targets, device=self.device)
+            self.coupling_weights_t = self.torch.tensor(self.coupling_weights, dtype=self.torch.float32, device=self.device)
+            self.coupling_delays_t = self.torch.tensor(self.coupling_delays, dtype=self.torch.int64, device=self.device)
+        else:
+            # Initialize neural mass model (numpy)
+            self.model = NeuralMassModel(self.config, self.region_I_ext, self.region_theta_e)
 
         # Simulation state
         self.state = None
@@ -251,15 +274,24 @@ class BrainNetworkSimulator:
         Args:
             initial_state: Optional initial conditions, shape (num_regions, 2)
         """
-        if initial_state is not None:
-            self.state = initial_state.copy()
+        if not self.use_torch:
+            if initial_state is not None:
+                self.state = initial_state.copy()
+            else:
+                # Random initial conditions near resting state
+                self.state = np.random.uniform(0.1, 0.3, (self.num_regions, 2))
+            # Initialize history buffer for delays (circular buffer)
+            self.history_buffer = np.zeros((self.max_delay + 1, self.num_regions, 2))
+            self.history_buffer[0] = self.state
         else:
-            # Random initial conditions near resting state
-            self.state = np.random.uniform(0.1, 0.3, (self.num_regions, 2))
-
-        # Initialize history buffer for delays (circular buffer)
-        self.history_buffer = np.zeros((self.max_delay + 1, self.num_regions, 2))
-        self.history_buffer[0] = self.state
+            torch = self.torch
+            if initial_state is not None:
+                self.state = torch.tensor(initial_state, dtype=torch.float32, device=self.device)
+            else:
+                self.state = torch.rand((self.num_regions, 2), device=self.device) * 0.2 + 0.1
+            self.history_buffer = torch.zeros((self.max_delay + 1, self.num_regions, 2),
+                                              device=self.device)
+            self.history_buffer[0] = self.state
         self.buffer_idx = 0
 
     def _get_delayed_coupling_fast(self, current_step: int) -> np.ndarray:
@@ -268,26 +300,32 @@ class BrainNetworkSimulator:
 
         This is 10-20x faster than the nested loop version.
         """
-        # Initialize coupling array
-        coupling = np.zeros(self.num_regions)
+        if self.use_torch:
+            torch = self.torch
+            coupling = torch.zeros(self.num_regions, device=self.device)
+            for i in range(self.num_connections):
+                source = int(self.coupling_sources_t[i])
+                target = int(self.coupling_targets_t[i])
+                delay = int(self.coupling_delays_t[i])
+                weight = self.coupling_weights_t[i]
+                if current_step >= delay:
+                    delayed_idx = (self.buffer_idx - delay) % (self.max_delay + 1)
+                    delayed_E = self.history_buffer[delayed_idx, source, 0]
+                    coupling[target] += self.config.global_coupling * weight * delayed_E
+            return coupling
+        else:
+            coupling = np.zeros(self.num_regions)
+            for i in range(self.num_connections):
+                source = self.coupling_sources[i]
+                target = self.coupling_targets[i]
+                delay = self.coupling_delays[i]
+                weight = self.coupling_weights[i]
 
-        # For each connection, get delayed activity and accumulate
-        # This is vectorized - no explicit loops!
-        for i in range(self.num_connections):
-            source = self.coupling_sources[i]
-            target = self.coupling_targets[i]
-            delay = self.coupling_delays[i]
-            weight = self.coupling_weights[i]
-
-            # Get delayed state (use modular indexing for circular buffer)
-            if current_step >= delay:
-                delayed_idx = (self.buffer_idx - delay) % (self.max_delay + 1)
-                delayed_E = self.history_buffer[delayed_idx, source, 0]
-
-                # Accumulate weighted coupling
-                coupling[target] += self.config.global_coupling * weight * delayed_E
-
-        return coupling
+                if current_step >= delay:
+                    delayed_idx = (self.buffer_idx - delay) % (self.max_delay + 1)
+                    delayed_E = self.history_buffer[delayed_idx, source, 0]
+                    coupling[target] += self.config.global_coupling * weight * delayed_E
+            return coupling
 
     def run_simulation(self,
                       initial_state: Optional[np.ndarray] = None,
@@ -314,6 +352,10 @@ class BrainNetworkSimulator:
 
         # Initialize
         self.initialize_state(initial_state)
+
+        # Torch backend branch
+        if self.use_torch:
+            return self._run_simulation_torch(save_interval, progress_callback, suppress_output)
 
         # Time setup
         num_steps = int(self.config.duration / self.config.dt)
@@ -430,6 +472,105 @@ class BrainNetworkSimulator:
         if self.activity_history is None:
             return np.array([])
         return self.activity_history[:, region_idx, 0]
+
+    def _run_simulation_torch(self, save_interval: int,
+                              progress_callback: Optional[Callable],
+                              suppress_output: bool) -> Dict:
+        """Torch backend simulation (CPU/MPS)."""
+        torch = self.torch
+        num_steps = int(self.config.duration / self.config.dt)
+        num_save_steps = num_steps // save_interval + 1
+        self.time_points = np.arange(0, num_steps) * self.config.dt
+
+        activity_history = torch.zeros((num_save_steps, self.num_regions, 2), device=self.device)
+
+        save_counter = 0
+        ou_noise = torch.zeros((self.num_regions, 2), device=self.device)
+        slow_drive = torch.zeros(self.num_regions, device=self.device)
+
+        if self.verbose and not suppress_output:
+            print(f"\nRunning FAST simulation (torch:{self.device}):")
+            print(f"  Duration: {self.config.duration} ms")
+            print(f"  dt: {self.config.dt} ms")
+
+        for step in range(num_steps):
+            noise = self.config.noise_strength * torch.randn((self.num_regions, 2), device=self.device)
+            if self.config.global_noise_frac > 0:
+                shared = self.config.global_noise_frac * self.config.noise_strength * torch.randn((), device=self.device)
+                noise += shared
+
+            if self.config.use_ou_noise:
+                ou_noise += (-ou_noise * (self.config.dt / self.config.ou_tau) +
+                             torch.sqrt(torch.tensor(2 * self.config.dt / self.config.ou_tau, device=self.device)) *
+                             self.config.ou_sigma * torch.randn((self.num_regions, 2), device=self.device))
+                noise += ou_noise
+
+            if self.config.slow_drive_sigma > 0:
+                slow_drive += (-slow_drive * (self.config.dt / self.config.slow_drive_tau) +
+                               torch.sqrt(torch.tensor(2 * self.config.dt / self.config.slow_drive_tau, device=self.device)) *
+                               self.config.slow_drive_sigma * torch.randn(self.num_regions, device=self.device))
+                noise[:, 0] += slow_drive
+                noise[:, 1] += slow_drive
+
+            if self.config.sin_drive_amp > 0 and self.config.sin_drive_freq_hz > 0:
+                t_sec = torch.tensor(step * self.config.dt / 1000.0, device=self.device, dtype=torch.float32)
+                sin_arg = 2 * np.pi * self.config.sin_drive_freq_hz * t_sec
+                sin_val = self.config.sin_drive_amp * torch.sin(sin_arg)
+                noise[:, 0] += sin_val
+                noise[:, 1] += sin_val
+
+            coupling = self._get_delayed_coupling_fast(step)
+
+            # Torch version of dfun
+            E = self.state[:, 0]
+            I = self.state[:, 1]
+            c = self.config
+            input_E = (c.c_ee * torch.sigmoid(c.a_e * (E - self.region_theta_e_t)) -
+                       c.c_ie * torch.sigmoid(c.a_i * (I - c.theta_i)) +
+                       self.region_I_ext_t + coupling + noise[:, 0])
+            input_I = (c.c_ei * torch.sigmoid(c.a_e * (E - self.region_theta_e_t)) -
+                       c.c_ii * torch.sigmoid(c.a_i * (I - c.theta_i)) +
+                       self.region_I_ext_t + noise[:, 1])
+
+            dE = (-E + torch.sigmoid(c.a_e * (input_E - self.region_theta_e_t))) / c.tau_e
+            dI = (-I + torch.sigmoid(c.a_i * (input_I - c.theta_i))) / c.tau_i
+            derivatives = torch.stack([dE, dI], dim=1)
+
+            self.state = torch.clip(self.state + self.config.dt * derivatives, -10, 10)
+
+            self.buffer_idx = (self.buffer_idx + 1) % (self.max_delay + 1)
+            self.history_buffer[self.buffer_idx] = self.state
+
+            if step % save_interval == 0:
+                activity_history[save_counter] = self.state
+                save_counter += 1
+
+            if progress_callback and step % 1000 == 0:
+                progress = (step / num_steps) * 100
+                progress_callback(progress, step, num_steps)
+
+        # Trim saved
+        activity_saved = activity_history[:save_counter]
+        time_saved = self.time_points[::save_interval][:save_counter]
+
+        transient_steps = int(self.config.transient / (self.config.dt * save_interval))
+        transient_steps = min(transient_steps, save_counter)
+        time_final = time_saved[transient_steps:]
+        activity_final = activity_saved[transient_steps:]
+
+        # Convert to numpy for outputs
+        activity_np = activity_final.detach().cpu().numpy()
+
+        return {
+            'time': time_final,
+            'activity': activity_np,
+            'E': activity_np[:, :, 0],
+            'I': activity_np[:, :, 1],
+            'region_labels': self.region_labels,
+            'config': self.config,
+            'num_regions': self.num_regions,
+            'connectivity': self.weights
+        }
 
 
 # Keep original convenience functions for compatibility

@@ -11,23 +11,30 @@
 ```
 VRBrainLab/
 │
-├── Core System (5 files):
-│   ├── data_loader.py        (12 KB) - Brain connectivity & model setup
-│   ├── simulator_fast.py     (13 KB) - Optimized brain simulation
-│   ├── intervention.py       (18 KB) - Lesions, stimulation, perturbations
-│   ├── analysis.py           (20 KB) - Metrics & biomarker extraction
-│   └── vr_interface.py       (17 KB) - REST API for VR frontend
+├── core/                  # Core simulation + analysis engines
+│   ├── data_loader.py     # Brain connectivity & model setup
+│   ├── simulator_fast.py  # Optimized brain simulation
+│   ├── intervention.py    # Lesions, stimulation, perturbations
+│   └── analysis.py        # Metrics & biomarker extraction
 │
-├── Usage (3 files):
-│   ├── demo_brain_lab.py     (11 KB) - Full feature demonstration
-│   ├── test.py               (6.5 KB) - Test suite (NEW - consolidated)
-│   └── auto_tuner.py         (8 KB) - Automatic parameter optimization
+├── tools/                 # CLI utilities and diagnostics
+│   ├── auto_tuner.py      # Automatic parameter optimization
+│   ├── diagnose_dynamics.py # Dynamics diagnostics
+│   └── test.py            # Consolidated tests + sweep runner
 │
-└── Documentation (4 files):
-    ├── README.md             (9.4 KB) - Main documentation (NEW - consolidated)
-    ├── SETUP.md              (5.9 KB) - Setup & configuration guide
-    ├── PROJECT_STRUCTURE.md  (6 KB) - Project overview
-    └── requirements.txt      (486 B) - Python dependencies
+├── examples/              # Demos and walkthroughs
+│   └── demo_brain_lab.py  # Full feature demonstration
+│
+├── services/              # Runtime services / interfaces
+│   └── vr_interface.py    # REST API for VR frontend
+│
+├── brain_data/            # Saved connectomes/outputs
+│
+└── Documentation:
+    ├── README.md
+    ├── SETUP.md
+    ├── PROJECT_STRUCTURE.md
+    └── requirements.txt
 ```
 
 **Total: 12 files, ~127 KB**

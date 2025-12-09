@@ -11,13 +11,25 @@ Addresses scientific concerns about model realism:
 
 Usage:
     python diagnose_dynamics.py
+    python diagnose_dynamics.py --config configs/brain_regime_v1.json
 """
 
+import sys
+from pathlib import Path
+
+import argparse
+import json
 import numpy as np
 from scipy import signal, stats
 from scipy.fft import fft, fftfreq
-from data_loader import create_default_brain
-from simulator_fast import BrainNetworkSimulator, SimulationConfig
+
+# Ensure project root on path
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from core.data_loader import create_default_brain
+from core.simulator_fast import BrainNetworkSimulator, SimulationConfig
 import matplotlib
 matplotlib.use('Agg')  # Non-interactive backend
 import matplotlib.pyplot as plt
@@ -108,7 +120,26 @@ def analyze_temporal_structure(activity, dt):
     }
 
 
-def run_comprehensive_diagnostics():
+def load_config(path: Path) -> SimulationConfig:
+    """Load SimulationConfig overrides from JSON, falling back to defaults."""
+    with open(path, "r") as f:
+        cfg = json.load(f)
+    params = cfg.get("parameters", cfg)
+    return SimulationConfig(
+        duration=3000.0,
+        transient=200.0,
+        global_coupling=float(params.get("global_coupling", SimulationConfig.global_coupling)),
+        I_ext=float(params.get("I_ext", SimulationConfig.I_ext)),
+        c_ee=float(params.get("c_ee", SimulationConfig.c_ee)),
+        c_ie=float(params.get("c_ie", SimulationConfig.c_ie)),
+        noise_strength=float(params.get("noise_strength", SimulationConfig.noise_strength)),
+        theta_e=float(params.get("theta_e", SimulationConfig.theta_e)),
+        slow_drive_sigma=float(params.get("slow_drive_sigma", SimulationConfig.slow_drive_sigma)),
+        delay_jitter_pct=float(params.get("delay_jitter_pct", SimulationConfig.delay_jitter_pct)),
+    )
+
+
+def run_comprehensive_diagnostics(cfg_path: Path = None):
     """Run complete diagnostic analysis."""
     print("=" * 70)
     print("BRAIN DYNAMICS COMPREHENSIVE DIAGNOSTICS")
@@ -119,7 +150,10 @@ def run_comprehensive_diagnostics():
     brain = create_default_brain(68)
 
     print("2. Running 3-second simulation...")
-    config = SimulationConfig(duration=3000.0, transient=200.0)
+    if cfg_path:
+        config = load_config(cfg_path)
+    else:
+        config = SimulationConfig(duration=3000.0, transient=200.0)
     sim = BrainNetworkSimulator(brain, config)
     results = sim.run_simulation()
 
@@ -306,5 +340,10 @@ def run_comprehensive_diagnostics():
 
 
 if __name__ == "__main__":
-    diagnostics = run_comprehensive_diagnostics()
+    parser = argparse.ArgumentParser(description="Brain dynamics diagnostics")
+    parser.add_argument("--config", type=str, default=None, help="Path to JSON config (e.g., configs/brain_regime_v1.json)")
+    args = parser.parse_args()
+
+    cfg_path = Path(args.config) if args.config else None
+    diagnostics = run_comprehensive_diagnostics(cfg_path)
     print("\nDiagnostics complete!")

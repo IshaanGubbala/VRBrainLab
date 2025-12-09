@@ -1,0 +1,33 @@
+{
+  "description": "Regime tuned via two-phase LHS + Nelder-Mead (loss ~0.55); use as baseline for VR/analysis.",
+  "parameters": {
+    "global_coupling": 0.792,
+    "I_ext": 0.860,
+    "c_ee": 8.841,
+    "c_ie": 16.796,
+    "noise_strength": 0.132,
+    "theta_e": 2.821,
+    "slow_drive_sigma": 0.611,
+    "delay_jitter_pct": 0.144
+  },
+  "targets": {
+    "mean": 0.45,
+    "std": 0.18,
+    "fc_mean": 0.45,
+    "metastability": 0.04,
+    "max_activity": 0.80
+  },
+  "metrics": {
+    "mean": 0.397,
+    "std": 0.171,
+    "fc_mean": 0.282,
+    "metastability": 0.026,
+    "max_activity": 0.940,
+    "loss": 0.547
+  },
+  "notes": [
+    "Max activity is high (0.94); if saturation shows up in VR, lower global_coupling or I_ext by ~5%.",
+    "c_ie finished slightly below lower bound; monitor inhibition when refining.",
+    "Use as fixed baseline for interventions and WebXR streaming."
+  ]
+}

@@ -576,8 +576,13 @@ if __name__ == "__main__":
     print("Brain Analysis Module - Demo")
     print("=" * 60)
 
-    from data_loader import create_default_brain
-    from simulator import BrainNetworkSimulator
+    import sys
+    from pathlib import Path
+
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+    from core.data_loader import create_default_brain
+    from core.simulator_fast import BrainNetworkSimulator
 
     # Create brain and run simulation
     brain_data = create_default_brain(num_regions=68)

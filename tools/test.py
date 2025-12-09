@@ -41,9 +41,15 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from data_loader import create_default_brain
-from simulator_fast import BrainNetworkSimulator, SimulationConfig
-from intervention import BrainIntervention
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from core.data_loader import create_default_brain
+from core.simulator_fast import BrainNetworkSimulator, SimulationConfig
+from core.intervention import BrainIntervention
 
 METRIC_NAMES = ["mean", "std", "fc", "metastability", "spectral_entropy"]
 

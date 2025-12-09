@@ -33,6 +33,7 @@ wheels/
 brain_data/
 data/
 results/
+tuner_logs/
 
 # IDE
 .vscode/

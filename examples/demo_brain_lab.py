@@ -12,12 +12,22 @@ This script demonstrates the full pipeline:
 Run this to verify your installation and see the system in action.
 """
 
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Optional
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 import numpy as np
-from data_loader import BrainDataLoader, create_default_brain
+from core.data_loader import BrainDataLoader, create_default_brain
 # Use fast optimized simulator (10-20x speedup)
-from simulator_fast import BrainNetworkSimulator, SimulationConfig
-from intervention import BrainIntervention
-from analysis import BrainActivityAnalyzer
+from core.simulator_fast import BrainNetworkSimulator, SimulationConfig
+from core.intervention import BrainIntervention
+from core.analysis import BrainActivityAnalyzer
 
 
 def print_section(title):
@@ -49,16 +59,12 @@ def demo_1_create_brain():
     return brain_data
 
 
-def demo_2_baseline_simulation(brain_data):
+def demo_2_baseline_simulation(brain_data, cfg: SimulationConfig):
     """Demo 2: Run baseline brain simulation."""
     print_section("DEMO 2: Baseline Brain Simulation")
 
-    # Configure simulation (use defaults from simulator.py for balanced parameters)
-    config = SimulationConfig(
-        duration=3000.0,  # 3 seconds
-        transient=500.0
-        # All other parameters use defaults from SimulationConfig
-    )
+    # Configure simulation (use provided config)
+    config = cfg
 
     print(f"Simulation parameters:")
     print(f"  Duration: {config.duration} ms")
@@ -139,12 +145,12 @@ def demo_3_analysis(results):
     return analyzer
 
 
-def demo_4_intervention(brain_data):
+def demo_4_intervention(brain_data, cfg: SimulationConfig):
     """Demo 4: Apply interventions and compare."""
     print_section("DEMO 4: Brain Interventions")
 
     # Create intervention manager
-    intervention = BrainIntervention(brain_data)
+    intervention = BrainIntervention(brain_data, sim_config=cfg)
 
     # Scenario 1: Region lesion
     print("Scenario 1: Single Region Lesion")
@@ -189,7 +195,7 @@ def demo_4_intervention(brain_data):
     )
 
     # Run stimulation simulation
-    sim = BrainNetworkSimulator(brain_data)
+    sim = BrainNetworkSimulator(brain_data, cfg)
     stim_results = sim.run_simulation(initial_state=initial_state)
 
     print(f"\n  Stimulation mean activity: {np.mean(stim_results['E']):.3f}")
@@ -223,18 +229,18 @@ def demo_4_intervention(brain_data):
     print(f"  Sedative drug: {np.mean(drug_results['E']):.3f} ({(np.mean(drug_results['E']) - np.mean(baseline_1['E'])) / np.mean(baseline_1['E']) * 100:+.1f}%)")
 
 
-def demo_5_recovery(brain_data):
+def demo_5_recovery(brain_data, cfg: SimulationConfig):
     """Demo 5: Recovery and plasticity simulation."""
     print_section("DEMO 5: Recovery & Plasticity")
 
-    intervention = BrainIntervention(brain_data)
+    intervention = BrainIntervention(brain_data, sim_config=cfg)
 
     # Apply lesion
     print("Step 1: Apply lesion")
     intervention.apply_region_lesion(region_indices=[10, 11], severity=0.9)
 
     # Simulate baseline lesion
-    sim1 = BrainNetworkSimulator(intervention.current_data)
+    sim1 = BrainNetworkSimulator(intervention.current_data, cfg)
     lesion_results = sim1.run_simulation()
     print(f"  Lesion activity: {np.mean(lesion_results['E']):.3f}")
 
@@ -243,7 +249,7 @@ def demo_5_recovery(brain_data):
     intervention.simulate_plasticity(learning_rate=0.15)
 
     # Simulate with plasticity
-    sim2 = BrainNetworkSimulator(intervention.current_data)
+    sim2 = BrainNetworkSimulator(intervention.current_data, cfg)
     plasticity_results = sim2.run_simulation()
     print(f"  Post-plasticity activity: {np.mean(plasticity_results['E']):.3f}")
 
@@ -252,7 +258,7 @@ def demo_5_recovery(brain_data):
     intervention.simulate_rewiring(num_new_connections=15, strength=0.6)
 
     # Simulate with rewiring
-    sim3 = BrainNetworkSimulator(intervention.current_data)
+    sim3 = BrainNetworkSimulator(intervention.current_data, cfg)
     rewiring_results = sim3.run_simulation()
     print(f"  Post-rewiring activity: {np.mean(rewiring_results['E']):.3f}")
 
@@ -262,38 +268,54 @@ def demo_5_recovery(brain_data):
     print(f"  3. After rewiring: {np.mean(rewiring_results['E']):.3f} ({(np.mean(rewiring_results['E']) - np.mean(lesion_results['E'])):.3f} improvement)")
 
 
+def load_config(path: Optional[Path]) -> SimulationConfig:
+    """Load SimulationConfig overrides from JSON, falling back to defaults."""
+    if path is None:
+        return SimulationConfig(duration=3000.0, transient=500.0)
+
+    with open(path, "r") as f:
+        cfg = json.load(f)
+    params = cfg.get("parameters", cfg)
+    return SimulationConfig(
+        duration=3000.0,
+        transient=500.0,
+        global_coupling=float(params.get("global_coupling", SimulationConfig.global_coupling)),
+        I_ext=float(params.get("I_ext", SimulationConfig.I_ext)),
+        c_ee=float(params.get("c_ee", SimulationConfig.c_ee)),
+        c_ie=float(params.get("c_ie", SimulationConfig.c_ie)),
+        noise_strength=float(params.get("noise_strength", SimulationConfig.noise_strength)),
+        theta_e=float(params.get("theta_e", SimulationConfig.theta_e)),
+        slow_drive_sigma=float(params.get("slow_drive_sigma", SimulationConfig.slow_drive_sigma)),
+        delay_jitter_pct=float(params.get("delay_jitter_pct", SimulationConfig.delay_jitter_pct)),
+    )
+
 def main():
-    """Run full demo pipeline."""
+    parser = argparse.ArgumentParser(description="VR Brain Lab Demo")
+    parser.add_argument("--config", type=str, default=None, help="Path to JSON config (e.g., configs/brain_regime_v1.json)")
+    args = parser.parse_args()
+
+    cfg = load_config(Path(args.config) if args.config else None)
+
     print("\n")
     print("╔" + "═" * 68 + "╗")
     print("║" + " " * 15 + "VR BRAIN LAB - FULL SYSTEM DEMO" + " " * 21 + "║")
     print("╚" + "═" * 68 + "╝")
 
     try:
-        # Demo 1: Create brain
         brain_data = demo_1_create_brain()
-
-        # Demo 2: Baseline simulation
-        baseline_results = demo_2_baseline_simulation(brain_data)
-
-        # Demo 3: Analysis
+        baseline_results = demo_2_baseline_simulation(brain_data, cfg)
         analyzer = demo_3_analysis(baseline_results)
+        demo_4_intervention(brain_data, cfg)
+        demo_5_recovery(brain_data, cfg)
 
-        # Demo 4: Interventions
-        demo_4_intervention(brain_data)
-
-        # Demo 5: Recovery
-        demo_5_recovery(brain_data)
-
-        # Success
         print_section("DEMO COMPLETE!")
         print("✓ All modules working correctly")
         print("✓ Brain simulation engine: OK")
         print("✓ Intervention system: OK")
         print("✓ Analysis pipeline: OK")
         print("\nNext steps:")
-        print("  1. Start VR API server: python vr_interface.py")
-        print("  2. Build Unity/VR frontend to visualize and interact")
+        print("  1. Start VR API server: python services/vr_interface.py")
+        print("  2. Build WebXR frontend to visualize and interact")
         print("  3. Load real patient data (structural MRI, DTI)")
         print("  4. Extend with more advanced neural models")
         print("\nFor more info, see README.md")

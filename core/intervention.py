@@ -15,10 +15,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from copy import deepcopy
 from dataclasses import dataclass
 # Use fast optimized simulator
-try:
-    from simulator_fast import BrainNetworkSimulator, SimulationConfig
-except ImportError:
-    from simulator import BrainNetworkSimulator, SimulationConfig
+from .simulator_fast import BrainNetworkSimulator, SimulationConfig
 
 
 @dataclass
@@ -518,7 +515,12 @@ if __name__ == "__main__":
     print("Brain Intervention Module - Demo")
     print("=" * 60)
 
-    from data_loader import create_default_brain
+    import sys
+    from pathlib import Path
+
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+    from core.data_loader import create_default_brain
 
     # Create brain
     brain_data = create_default_brain(num_regions=68)

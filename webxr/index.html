@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VR Brain Lab - Interactive 3D Viewer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
+      color: #e8eef5;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    #canvas-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    canvas {
+      display: block;
+      cursor: grab;
+    }
+
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    /* Control Panel */
+    #control-panel {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(15, 20, 35, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 16px;
+      min-width: 220px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      z-index: 100;
+    }
+
+    #control-panel h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #4da6ff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-group {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .control-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: #a8b4c5;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #4da6ff 0%, #3d85cc 100%);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      width: 100%;
+      margin-bottom: 6px;
+      box-shadow: 0 4px 12px rgba(77, 166, 255, 0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(77, 166, 255, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.secondary {
+      background: linear-gradient(135deg, #2a3f5f 0%, #1e2d42 100%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    button.danger {
+      background: linear-gradient(135deg, #ff6b6b 0%, #cc5555 100%);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #4da6ff;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(77, 166, 255, 0.5);
+    }
+
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+
+    .stat-label {
+      color: #a8b4c5;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      color: #4da6ff;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Legend */
+    #legend {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(15, 20, 35, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      z-index: 100;
+    }
+
+    #legend h3 {
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #a8b4c5;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #legendCanvas {
+      display: block;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .legend-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #a8b4c5;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Info Tooltip */
+    #info-tooltip {
+      position: fixed;
+      background: rgba(15, 20, 35, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(77, 166, 255, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      pointer-events: none;
+      display: none;
+      z-index: 200;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+
+    #info-tooltip.visible {
+      display: block;
+    }
+
+    .tooltip-title {
+      font-weight: 600;
+      color: #4da6ff;
+      margin-bottom: 4px;
+    }
+
+    .tooltip-value {
+      font-size: 12px;
+      color: #a8b4c5;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Loading */
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 14, 26, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      transition: opacity 0.5s ease;
+    }
+
+    #loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loader {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(77, 166, 255, 0.2);
+      border-top: 4px solid #4da6ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 16px;
+      color: #a8b4c5;
+    }
+
+    /* Instructions */
+    #instructions {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 20, 35, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-size: 12px;
+      color: #a8b4c5;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .key {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      margin: 0 4px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div id="loading">
+    <div class="loader"></div>
+    <div class="loading-text">Loading brain network...</div>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Control Panel -->
+  <div id="control-panel">
+    <h2>
+      <span>🧠</span>
+      Brain Controls
+    </h2>
+
+    <div class="control-group">
+      <button id="btnStart">▶ Start Simulation</button>
+      <button id="btnPause" class="secondary">⏸ Pause</button>
+      <button id="btnReset" class="secondary">🔄 Reset View</button>
+    </div>
+
+    <div class="control-group">
+      <label>Playback Speed</label>
+      <input id="speedRange" type="range" min="1" max="20" value="5">
+      <div class="stat">
+        <span class="stat-label">Downsample</span>
+        <span class="stat-value" id="hud-ds">x5</span>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Brain Rotation</label>
+      <div class="stat">
+        <span class="stat-label">Auto-Rotate</span>
+        <button id="btnRotate" class="secondary" style="width: 80px; margin: 0; padding: 6px 12px;">OFF</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Statistics</label>
+      <div class="stat">
+        <span class="stat-label">Time</span>
+        <span class="stat-value" id="hud-time">0.0 ms</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Activity Range</span>
+        <span class="stat-value" id="hud-range">0.000 - 1.000</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Regions</span>
+        <span class="stat-value" id="hud-regions">68</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div id="legend">
+    <h3>Activity Level</h3>
+    <canvas id="legendCanvas" width="30" height="120"></canvas>
+    <div class="legend-labels">
+      <span id="legend-min">0.000</span>
+      <span id="legend-max">1.000</span>
+    </div>
+  </div>
+
+  <!-- Info Tooltip -->
+  <div id="info-tooltip">
+    <div class="tooltip-title" id="tooltip-title">Region Name</div>
+    <div class="tooltip-value" id="tooltip-value">Activity: 0.000</div>
+  </div>
+
+  <!-- Instructions -->
+  <div id="instructions">
+    <span class="key">Left Click + Drag</span> Rotate
+    <span class="key">Right Click + Drag</span> Pan
+    <span class="key">Scroll</span> Zoom
+    <span class="key">Hover</span> Region Info
+  </div>
+
+  <!-- Three.js and OrbitControls -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.164/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+    // Configuration
+    const API = 'http://localhost:8080';
+
+    // Scene objects
+    let scene, camera, renderer, controls, composer;
+    let nodes = [], edges = [];
+    let regionLabels = [];
+    let brainGroup;
+    let raycaster, mouse;
+
+    // State
+    let polling = true;
+    let pollDelay = 100;
+    let downsample = 5;
+    let activityScale = { min: 0, max: 1 };
+    let currentTimeMs = 0;
+    let autoRotate = false;
+    let hoveredNode = null;
+
+    // Fetch helper
+    async function fetchJSON(path) {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    // Map region label to anatomical 3D coordinates
+    function getAnatomicalPosition(label, index, totalRegions) {
+      // Parse label components
+      const hemisphere = label.startsWith('L_') ? 'left' : 'right';
+      const labelUpper = label.toUpperCase();
+
+      // Determine lobe/region type
+      let lobe = 'unknown';
+      if (labelUpper.includes('FRONTAL')) lobe = 'frontal';
+      else if (labelUpper.includes('PARIETAL')) lobe = 'parietal';
+      else if (labelUpper.includes('TEMPORAL')) lobe = 'temporal';
+      else if (labelUpper.includes('OCCIPITAL')) lobe = 'occipital';
+      else if (labelUpper.includes('CINGULATE')) lobe = 'cingulate';
+      else if (labelUpper.includes('INSULA')) lobe = 'insula';
+      else if (labelUpper.includes('PRECUNEUS')) lobe = 'parietal';
+      else if (labelUpper.includes('CUNEUS')) lobe = 'occipital';
+      else if (labelUpper.includes('PRECENTRAL')) lobe = 'frontal';
+      else if (labelUpper.includes('POSTCENTRAL')) lobe = 'parietal';
+      else if (labelUpper.includes('CAUDATE') || labelUpper.includes('PUTAMEN') ||
+               labelUpper.includes('PALLIDUM') || labelUpper.includes('THALAMUS') ||
+               labelUpper.includes('HIPPOCAMPUS') || labelUpper.includes('AMYGDALA')) {
+        lobe = 'subcortical';
+      }
+
+      // Base coordinates for brain lobes (roughly anatomical)
+      const lobePositions = {
+        frontal: { x: 0, y: 30, z: 40 },      // Front, upper
+        parietal: { x: 0, y: 40, z: -10 },    // Top, middle-back
+        temporal: { x: 50, y: 0, z: 0 },      // Side, middle
+        occipital: { x: 0, y: 25, z: -50 },   // Back, upper
+        cingulate: { x: 0, y: 35, z: 0 },     // Medial, top
+        insula: { x: 30, y: 10, z: 5 },       // Deep lateral
+        subcortical: { x: 0, y: 0, z: 0 },    // Center
+        unknown: { x: 0, y: 20, z: 0 }        // Default
+      };
+
+      let pos = { ...lobePositions[lobe] };
+
+      // Hemisphere offset (left = negative x, right = positive x)
+      if (hemisphere === 'left') {
+        pos.x = -Math.abs(pos.x) - 20;
+      } else {
+        pos.x = Math.abs(pos.x) + 20;
+      }
+
+      // Add some spacing variation based on index within region
+      const regionIndex = parseInt(label.match(/_(\d+)$/)?.[1] || '0');
+      const jitter = 8;
+      pos.x += (Math.sin(regionIndex * 2.5) * jitter);
+      pos.y += (Math.cos(regionIndex * 3.1) * jitter);
+      pos.z += (Math.sin(regionIndex * 1.7) * jitter);
+
+      return new THREE.Vector3(pos.x, pos.y, pos.z);
+    }
+
+    // Initialize scene
+    async function init() {
+      // Fetch brain data
+      const info = await fetchJSON(`${API}/api/brain/info`);
+      regionLabels = info.region_labels;
+      const centers = info.centers;
+      document.getElementById('hud-regions').textContent = centers.length;
+
+      // Scene setup
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color('#0a0e1a');
+      scene.fog = new THREE.FogExp2('#0a0e1a', 0.002);
+
+      // Camera
+      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000);
+      camera.position.set(0, 50, 200);
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+      document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+      // Controls
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.minDistance = 50;
+      controls.maxDistance = 500;
+      controls.autoRotate = false;
+      controls.autoRotateSpeed = 0.5;
+
+      // Raycaster for hover
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0x404560, 0.6);
+      scene.add(ambientLight);
+
+      const keyLight = new THREE.DirectionalLight(0x4da6ff, 0.8);
+      keyLight.position.set(100, 100, 100);
+      scene.add(keyLight);
+
+      const fillLight = new THREE.DirectionalLight(0xff6b9d, 0.4);
+      fillLight.position.set(-100, -50, -100);
+      scene.add(fillLight);
+
+      const backLight = new THREE.PointLight(0x6b9dff, 0.6);
+      backLight.position.set(0, -100, -100);
+      scene.add(backLight);
+
+      // Brain group
+      brainGroup = new THREE.Group();
+      scene.add(brainGroup);
+
+      // Create nodes with enhanced materials
+      const nodeGeo = new THREE.SphereGeometry(1.5, 16, 16);
+      centers.forEach((c, idx) => {
+        const mat = new THREE.MeshPhongMaterial({
+          color: 0x4da6ff,
+          emissive: 0x4da6ff,
+          emissiveIntensity: 0.3,
+          shininess: 30,
+          transparent: true,
+          opacity: 0.9
+        });
+        const mesh = new THREE.Mesh(nodeGeo, mat);
+
+        // Use anatomical positioning based on region label
+        const anatomicalPos = getAnatomicalPosition(regionLabels[idx], idx, centers.length);
+        mesh.position.copy(anatomicalPos);
+
+        // Initialize user data with activity
+        mesh.userData = { idx, label: regionLabels[idx], activity: 0.0 };
+        brainGroup.add(mesh);
+        nodes.push(mesh);
+
+        // Add subtle glow sphere
+        const glowGeo = new THREE.SphereGeometry(2, 16, 16);
+        const glowMat = new THREE.MeshBasicMaterial({
+          color: 0x4da6ff,
+          transparent: true,
+          opacity: 0.15
+        });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        mesh.add(glow);
+      });
+
+      // Create edges using anatomical positions
+      const conn = await fetchJSON(`${API}/api/brain/connectivity`);
+      const weights = conn.weights;
+
+      for (let i = 0; i < weights.length; i++) {
+        for (let j = i + 1; j < weights.length; j++) {
+          if (weights[i][j] > 0) {
+            const pts = [
+              nodes[i].position.clone(),
+              nodes[j].position.clone()
+            ];
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const mat = new THREE.LineBasicMaterial({
+              color: 0x2a3f5f,
+              transparent: true,
+              opacity: 0.15
+            });
+            const line = new THREE.Line(geo, mat);
+            brainGroup.add(line);
+            edges.push(line);
+          }
+        }
+      }
+
+      // Post-processing (bloom effect)
+      composer = new EffectComposer(renderer);
+      composer.addPass(new RenderPass(scene, camera));
+
+      const bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        0.6,  // strength
+        0.4,  // radius
+        0.85  // threshold
+      );
+      composer.addPass(bloomPass);
+
+      // Event listeners
+      window.addEventListener('resize', onWindowResize);
+      renderer.domElement.addEventListener('mousemove', onMouseMove);
+      renderer.domElement.addEventListener('click', onMouseClick);
+
+      // Initialize legend
+      updateLegend();
+
+      // Hide loading screen
+      document.getElementById('loading').classList.add('hidden');
+
+      // Start animation
+      animate();
+      pollStream();
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function onMouseMove(event) {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(nodes);
+
+      if (intersects.length > 0) {
+        const node = intersects[0].object;
+        if (hoveredNode !== node) {
+          // Reset previous
+          if (hoveredNode) {
+            hoveredNode.material.emissiveIntensity = 0.3;
+            hoveredNode.scale.set(1, 1, 1);
+          }
+          // Highlight new
+          hoveredNode = node;
+          hoveredNode.material.emissiveIntensity = 0.8;
+          hoveredNode.scale.set(1.3, 1.3, 1.3);
+
+          // Show tooltip
+          const tooltip = document.getElementById('info-tooltip');
+          tooltip.style.left = event.clientX + 15 + 'px';
+          tooltip.style.top = event.clientY + 15 + 'px';
+          tooltip.classList.add('visible');
+          document.getElementById('tooltip-title').textContent = node.userData.label;
+
+          const activity = node.userData.activity;
+          const activityText = (activity === 0 || activity === undefined)
+            ? 'Waiting for data...'
+            : `Activity: ${activity.toFixed(3)}`;
+          document.getElementById('tooltip-value').textContent = activityText;
+        }
+      } else {
+        if (hoveredNode) {
+          hoveredNode.material.emissiveIntensity = 0.3;
+          hoveredNode.scale.set(1, 1, 1);
+          hoveredNode = null;
+          document.getElementById('info-tooltip').classList.remove('visible');
+        }
+      }
+    }
+
+    function onMouseClick() {
+      if (hoveredNode) {
+        console.log('Clicked region:', hoveredNode.userData);
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+
+      if (autoRotate) {
+        brainGroup.rotation.y += 0.003;
+      }
+
+      composer.render();
+    }
+
+    function updateLegend() {
+      const canvas = document.getElementById('legendCanvas');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      const img = ctx.createImageData(w, h);
+      for (let y = 0; y < h; y++) {
+        const t = 1 - y / (h - 1);
+        const color = new THREE.Color().setHSL(0.6 - 0.6 * t, 1.0, 0.5);
+        for (let x = 0; x < w; x++) {
+          const idx = (y * w + x) * 4;
+          img.data[idx] = Math.floor(color.r * 255);
+          img.data[idx + 1] = Math.floor(color.g * 255);
+          img.data[idx + 2] = Math.floor(color.b * 255);
+          img.data[idx + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+
+      document.getElementById('legend-min').textContent = activityScale.min.toFixed(3);
+      document.getElementById('legend-max').textContent = activityScale.max.toFixed(3);
+    }
+
+    async function pollStream() {
+      let cursor = 0;
+      while (true) {
+        if (!polling) {
+          await new Promise(r => setTimeout(r, 200));
+          continue;
+        }
+
+        try {
+          const chunk = await fetchJSON(
+            `${API}/api/simulation/activity_stream?start=${cursor}&downsample=${downsample}&limit=50`
+          );
+
+          if (chunk.activity.length > 0) {
+            const last = chunk.activity[chunk.activity.length - 1];
+            const vals = [...last];
+
+            // Adaptive scaling
+            const sorted = [...vals].sort((a, b) => a - b);
+            const p05 = sorted[Math.floor(0.05 * (sorted.length - 1))];
+            const p95 = sorted[Math.floor(0.95 * (sorted.length - 1))];
+            activityScale = { min: p05, max: p95 };
+
+            // Update node colors
+            nodes.forEach((n, idx) => {
+              const val = vals[idx];
+              const t = Math.max(0, Math.min(1, (val - p05) / (p95 - p05 + 1e-6)));
+              const color = new THREE.Color().setHSL(0.6 - 0.6 * t, 1.0, 0.5);
+              n.material.color = color;
+              n.material.emissive = color;
+              n.userData.activity = val;
+            });
+
+            currentTimeMs = chunk.time[chunk.time.length - 1] || currentTimeMs;
+            cursor = chunk.next_start ?? chunk.end;
+
+            updateHUD();
+            updateLegend();
+          }
+
+          if (chunk.done) {
+            await new Promise(r => setTimeout(r, 1000));
+            cursor = 0;
+          } else {
+            await new Promise(r => setTimeout(r, pollDelay));
+          }
+        } catch (e) {
+          console.error('Poll error:', e);
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+    }
+
+    async function startSim() {
+      try {
+        const res = await fetch(`${API}/api/simulation/run`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        console.log('Simulation started');
+        currentTimeMs = 0;
+      } catch (e) {
+        console.error('Failed to start simulation:', e);
+      }
+    }
+
+    function togglePoll() {
+      polling = !polling;
+      const btn = document.getElementById('btnPause');
+      btn.textContent = polling ? '⏸ Pause' : '▶ Resume';
+    }
+
+    function resetView() {
+      controls.reset();
+      camera.position.set(0, 50, 200);
+    }
+
+    function toggleRotate() {
+      autoRotate = !autoRotate;
+      const btn = document.getElementById('btnRotate');
+      btn.textContent = autoRotate ? 'ON' : 'OFF';
+    }
+
+    function updateHUD() {
+      document.getElementById('hud-time').textContent = `${currentTimeMs.toFixed(1)} ms`;
+      document.getElementById('hud-range').textContent =
+        `${activityScale.min.toFixed(3)} - ${activityScale.max.toFixed(3)}`;
+      document.getElementById('hud-ds').textContent = `x${downsample}`;
+    }
+
+    function changeSpeed(e) {
+      downsample = Math.max(1, parseInt(e.target.value, 10));
+      updateHUD();
+    }
+
+    // Event handlers
+    window.addEventListener('load', () => {
+      document.getElementById('btnStart').onclick = startSim;
+      document.getElementById('btnPause').onclick = togglePoll;
+      document.getElementById('btnReset').onclick = resetView;
+      document.getElementById('btnRotate').onclick = toggleRotate;
+      document.getElementById('speedRange').oninput = changeSpeed;
+      init();
+    });
+  </script>
+</body>
+</html>
