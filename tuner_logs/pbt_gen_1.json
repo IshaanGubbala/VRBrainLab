@@ -1,0 +1,930 @@
+[
+  {
+    "score": -1.3540148118899518,
+    "metrics": {
+      "mean": 0.6802746599270955,
+      "std": 0.23650524991168875,
+      "fc": 0.011499035610895797,
+      "metastability": 0.00841124048978599,
+      "spectral_entropy": 0.5992688984194293
+    },
+    "params": {
+      "ratio": 1.0913221474237997,
+      "coupling": 0.43788121824451176,
+      "i_ext": 1.5326206531516813,
+      "noise_strength": 0.19119095722388527,
+      "i_ext_hetero": 0.3135175667026719,
+      "theta_hetero": 0.4813131414966379,
+      "delay_jitter": 0.2690046913810909,
+      "slow_drive_sigma": 0.21594894002637133,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 359225
+    }
+  },
+  {
+    "score": -6.048188590907527,
+    "metrics": {
+      "mean": 0.8172064195314701,
+      "std": 0.19947041794552925,
+      "fc": 0.012198068820150782,
+      "metastability": 0.007581972108344937,
+      "spectral_entropy": 0.6736786780180151
+    },
+    "params": {
+      "ratio": 1.1962785991622746,
+      "coupling": 0.5848773931412486,
+      "i_ext": 1.700042354536107,
+      "noise_strength": 0.20502504346988726,
+      "i_ext_hetero": 0.2858775214385497,
+      "theta_hetero": 0.5370628093948538,
+      "delay_jitter": 0.3600422298876095,
+      "slow_drive_sigma": 0.2711130196565987,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 819458
+    }
+  },
+  {
+    "score": -5.356841757117667,
+    "metrics": {
+      "mean": 0.7492935199021388,
+      "std": 0.18823436179257838,
+      "fc": 0.01835132406870009,
+      "metastability": 0.009318041150713592,
+      "spectral_entropy": 0.5295154295664215
+    },
+    "params": {
+      "ratio": 0.9034885128711484,
+      "coupling": 0.7441935741894844,
+      "i_ext": 1.453366104874479,
+      "noise_strength": 0.16937551655402033,
+      "i_ext_hetero": 0.2726308619142651,
+      "theta_hetero": 0.39302503168206226,
+      "delay_jitter": 0.28836848868472253,
+      "slow_drive_sigma": 0.23754028667065205,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 699576
+    }
+  },
+  {
+    "score": 3.914177724843141,
+    "metrics": {
+      "mean": 0.5408732859747251,
+      "std": 0.22807120128507444,
+      "fc": -0.0004325284629279086,
+      "metastability": 0.006790334517359515,
+      "spectral_entropy": 0.748291002111896
+    },
+    "params": {
+      "ratio": 1.0452472919602274,
+      "coupling": 0.41353871362650896,
+      "i_ext": 1.8800185393909747,
+      "noise_strength": 0.16545568981079486,
+      "i_ext_hetero": 0.30287348787478674,
+      "theta_hetero": 0.5316595020521434,
+      "delay_jitter": 0.3266874584329643,
+      "slow_drive_sigma": 0.36471212288283067,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 813574
+    }
+  },
+  {
+    "score": 3.822518458165151,
+    "metrics": {
+      "mean": 0.504446727304696,
+      "std": 0.22904707475030062,
+      "fc": 0.012559516656079284,
+      "metastability": 0.008472703270913741,
+      "spectral_entropy": 0.6489516465559555
+    },
+    "params": {
+      "ratio": 0.9995331000270111,
+      "coupling": 0.4491890477412773,
+      "i_ext": 1.238794808790267,
+      "noise_strength": 0.25453747438874885,
+      "i_ext_hetero": 0.3447401540351899,
+      "theta_hetero": 0.4378489220444844,
+      "delay_jitter": 0.3459651049348853,
+      "slow_drive_sigma": 0.33511305583560663,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 701191
+    }
+  },
+  {
+    "score": 3.611403454393685,
+    "metrics": {
+      "mean": 0.5493131553254607,
+      "std": 0.19383978623725603,
+      "fc": 0.028906394095934068,
+      "metastability": 0.008655714268781964,
+      "spectral_entropy": 0.5002393135972327
+    },
+    "params": {
+      "ratio": 0.8909634298996838,
+      "coupling": 0.6054761637193433,
+      "i_ext": 1.3007951335098364,
+      "noise_strength": 0.2594852987327862,
+      "i_ext_hetero": 0.27724904691969315,
+      "theta_hetero": 0.3544350104320458,
+      "delay_jitter": 0.3528469053272827,
+      "slow_drive_sigma": 0.33027454058947825,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 45255
+    }
+  },
+  {
+    "score": -0.37646119061150596,
+    "metrics": {
+      "mean": 0.27791106919482517,
+      "std": 0.14743358005522053,
+      "fc": 0.003471558901315864,
+      "metastability": 0.008283128287798827,
+      "spectral_entropy": 0.7218109425446375
+    },
+    "params": {
+      "ratio": 0.8840142327041252,
+      "coupling": 0.23540637727249814,
+      "i_ext": 1.1343548168718371,
+      "noise_strength": 0.17159404104289358,
+      "i_ext_hetero": 0.21120810320172362,
+      "theta_hetero": 0.3736060075685845,
+      "delay_jitter": 0.30594425320670876,
+      "slow_drive_sigma": 0.3880857368265825,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 675541
+    }
+  },
+  {
+    "score": 3.7779676505948188,
+    "metrics": {
+      "mean": 0.5069090605004521,
+      "std": 0.22884110700718394,
+      "fc": 0.012477261952236288,
+      "metastability": 0.006317598614981952,
+      "spectral_entropy": 0.6538206877295438
+    },
+    "params": {
+      "ratio": 1.0305697225286197,
+      "coupling": 0.29624926304917865,
+      "i_ext": 1.5813525302863327,
+      "noise_strength": 0.23049044285628384,
+      "i_ext_hetero": 0.21359459261000194,
+      "theta_hetero": 0.4711173075028863,
+      "delay_jitter": 0.3123629713362927,
+      "slow_drive_sigma": 0.24290519021852325,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 107251
+    }
+  },
+  {
+    "score": -0.9243585100651572,
+    "metrics": {
+      "mean": 0.6322265202672851,
+      "std": 0.2406029828341291,
+      "fc": 0.018246461825013834,
+      "metastability": 0.0065638447082763144,
+      "spectral_entropy": 0.49862212361163516
+    },
+    "params": {
+      "ratio": 0.9025935509631159,
+      "coupling": 0.6856821797790534,
+      "i_ext": 1.2821184084662915,
+      "noise_strength": 0.1682187450010113,
+      "i_ext_hetero": 0.30847851751655087,
+      "theta_hetero": 0.49770635842660566,
+      "delay_jitter": 0.38608517010017646,
+      "slow_drive_sigma": 0.34531290626247313,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 437144
+    }
+  },
+  {
+    "score": -0.9997083892148848,
+    "metrics": {
+      "mean": 0.6571071005106249,
+      "std": 0.2341154911652701,
+      "fc": 0.00934978295164714,
+      "metastability": 0.005698016731881514,
+      "spectral_entropy": 0.661260142269087
+    },
+    "params": {
+      "ratio": 1.1065138796814353,
+      "coupling": 0.3974870958049296,
+      "i_ext": 1.1557268662705682,
+      "noise_strength": 0.20274643755561098,
+      "i_ext_hetero": 0.22887501394595028,
+      "theta_hetero": 0.5221606247445025,
+      "delay_jitter": 0.3262187682360083,
+      "slow_drive_sigma": 0.27603961320855197,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 89392
+    }
+  },
+  {
+    "score": 3.882111224999268,
+    "metrics": {
+      "mean": 0.5415628880907484,
+      "std": 0.20113902154777868,
+      "fc": 0.0014623747175884648,
+      "metastability": 0.008643189013125555,
+      "spectral_entropy": 0.7043598130415931
+    },
+    "params": {
+      "ratio": 1.0114478207037187,
+      "coupling": 0.5058351615969332,
+      "i_ext": 1.4948528430336492,
+      "noise_strength": 0.2193173351155757,
+      "i_ext_hetero": 0.2348002737642319,
+      "theta_hetero": 0.3996186228575652,
+      "delay_jitter": 0.37511958321888095,
+      "slow_drive_sigma": 0.22039121514546062,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 351122
+    }
+  },
+  {
+    "score": -3.653378245662539,
+    "metrics": {
+      "mean": 0.828177643004983,
+      "std": 0.14926560176611234,
+      "fc": 0.02779806554744676,
+      "metastability": 0.010154440057981442,
+      "spectral_entropy": 0.4410029673039575
+    },
+    "params": {
+      "ratio": 1.051096500132992,
+      "coupling": 0.6701971944003334,
+      "i_ext": 1.807604594160522,
+      "noise_strength": 0.1732223013081563,
+      "i_ext_hetero": 0.2706945431223736,
+      "theta_hetero": 0.37848013083208615,
+      "delay_jitter": 0.2512238956858413,
+      "slow_drive_sigma": 0.3194653026123154,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 574484
+    }
+  },
+  {
+    "score": 3.6823825816196685,
+    "metrics": {
+      "mean": 0.540839888215216,
+      "std": 0.24800951234018676,
+      "fc": 0.021242656863636196,
+      "metastability": 0.006364927636441495,
+      "spectral_entropy": 0.5835230531952252
+    },
+    "params": {
+      "ratio": 0.9905162725759089,
+      "coupling": 0.3784186924653065,
+      "i_ext": 1.3901604735692346,
+      "noise_strength": 0.1986779945876572,
+      "i_ext_hetero": 0.33942653919467963,
+      "theta_hetero": 0.4538406623879249,
+      "delay_jitter": 0.30748757723469045,
+      "slow_drive_sigma": 0.2190141253676394,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 854911
+    }
+  },
+  {
+    "score": -0.5401595584685663,
+    "metrics": {
+      "mean": 0.6057109600401145,
+      "std": 0.220911902191947,
+      "fc": 0.01875689169464172,
+      "metastability": 0.0076880846770567045,
+      "spectral_entropy": 0.4739419390478414
+    },
+    "params": {
+      "ratio": 0.9273262408558504,
+      "coupling": 0.5412416081166438,
+      "i_ext": 1.6607913374390852,
+      "noise_strength": 0.2159692247717594,
+      "i_ext_hetero": 0.3060304022413977,
+      "theta_hetero": 0.4482905828726998,
+      "delay_jitter": 0.3226142778316861,
+      "slow_drive_sigma": 0.2225272408651113,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 216410
+    }
+  },
+  {
+    "score": 3.8463900025068383,
+    "metrics": {
+      "mean": 0.3778492561352809,
+      "std": 0.22420991091295533,
+      "fc": -0.005396624598939762,
+      "metastability": 0.007776788520775991,
+      "spectral_entropy": 0.7144767062410684
+    },
+    "params": {
+      "ratio": 0.888738148537275,
+      "coupling": 0.2841038341309823,
+      "i_ext": 1.3509436743302152,
+      "noise_strength": 0.19936659700662343,
+      "i_ext_hetero": 0.2135618569404168,
+      "theta_hetero": 0.5122436755929426,
+      "delay_jitter": 0.38276626101281297,
+      "slow_drive_sigma": 0.3896562990654509,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 932053
+    }
+  },
+  {
+    "score": -1.1463142927348409,
+    "metrics": {
+      "mean": 0.6634858964920778,
+      "std": 0.21335260399630693,
+      "fc": 0.008319477211792848,
+      "metastability": 0.005695211028815505,
+      "spectral_entropy": 0.6330933326900888
+    },
+    "params": {
+      "ratio": 0.8150494010403597,
+      "coupling": 0.6230777613993286,
+      "i_ext": 1.8014432238804199,
+      "noise_strength": 0.24556252427160316,
+      "i_ext_hetero": 0.30223191585590015,
+      "theta_hetero": 0.46390832508807456,
+      "delay_jitter": 0.3835117274556139,
+      "slow_drive_sigma": 0.2579915073259372,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 588769
+    }
+  },
+  {
+    "score": -0.7248742784444575,
+    "metrics": {
+      "mean": 0.6451039269083555,
+      "std": 0.19654596505542363,
+      "fc": 0.011777526696834932,
+      "metastability": 0.006740501646525187,
+      "spectral_entropy": 0.6995556195098223
+    },
+    "params": {
+      "ratio": 0.9576189386602,
+      "coupling": 0.5057672982937709,
+      "i_ext": 1.6284471134945364,
+      "noise_strength": 0.20520379226981675,
+      "i_ext_hetero": 0.3211626445614743,
+      "theta_hetero": 0.47948060487791644,
+      "delay_jitter": 0.285521115734791,
+      "slow_drive_sigma": 0.3744471015187896,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 701120
+    }
+  },
+  {
+    "score": 1.8703671077832567,
+    "metrics": {
+      "mean": 0.6491590914237536,
+      "std": 0.18063313260569955,
+      "fc": 0.055164332019994246,
+      "metastability": 0.010847929240297491,
+      "spectral_entropy": 0.4321218840350943
+    },
+    "params": {
+      "ratio": 0.9040892835904187,
+      "coupling": 0.6787003982929672,
+      "i_ext": 1.4703720695176568,
+      "noise_strength": 0.17314284218197937,
+      "i_ext_hetero": 0.33782171875870115,
+      "theta_hetero": 0.4868004149087083,
+      "delay_jitter": 0.36557323803679803,
+      "slow_drive_sigma": 0.28453370217798124,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 356516
+    }
+  },
+  {
+    "score": -5.444669174812102,
+    "metrics": {
+      "mean": 0.7819941903262033,
+      "std": 0.18211310784107596,
+      "fc": 0.015146381511855066,
+      "metastability": 0.007437184023866025,
+      "spectral_entropy": 0.7351292606906747
+    },
+    "params": {
+      "ratio": 1.0091005308053038,
+      "coupling": 0.6726128157697389,
+      "i_ext": 1.534344835759986,
+      "noise_strength": 0.17720954803898348,
+      "i_ext_hetero": 0.31749406278228187,
+      "theta_hetero": 0.3910497261568507,
+      "delay_jitter": 0.3955714256505667,
+      "slow_drive_sigma": 0.295691248582813,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 999050
+    }
+  },
+  {
+    "score": -4.875902112062477,
+    "metrics": {
+      "mean": 0.7182620200927452,
+      "std": 0.22119944177790932,
+      "fc": 0.024289897715689904,
+      "metastability": 0.007679388309235516,
+      "spectral_entropy": 0.5687453130990614
+    },
+    "params": {
+      "ratio": 1.0028037904813272,
+      "coupling": 0.6476030302801953,
+      "i_ext": 1.1983947127645693,
+      "noise_strength": 0.2410434221066873,
+      "i_ext_hetero": 0.3459056476781094,
+      "theta_hetero": 0.5038096166755727,
+      "delay_jitter": 0.2902951798573582,
+      "slow_drive_sigma": 0.3532552153982776,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 474655
+    }
+  },
+  {
+    "score": 3.951704209506542,
+    "metrics": {
+      "mean": 0.37213723289688616,
+      "std": 0.21524878499778102,
+      "fc": 0.020155388162214224,
+      "metastability": 0.009866512395342076,
+      "spectral_entropy": 0.6771322294059593
+    },
+    "params": {
+      "ratio": 0.8784282143856258,
+      "coupling": 0.34864146904313664,
+      "i_ext": 1.3099423515782576,
+      "noise_strength": 0.16110707899816679,
+      "i_ext_hetero": 0.20969286072914456,
+      "theta_hetero": 0.5080025286914364,
+      "delay_jitter": 0.26337180505649926,
+      "slow_drive_sigma": 0.3577095057390723,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 153046
+    }
+  },
+  {
+    "score": -4.701791393313471,
+    "metrics": {
+      "mean": 0.717619764127355,
+      "std": 0.20598592889544215,
+      "fc": 0.008592375163990579,
+      "metastability": 0.008386739506934221,
+      "spectral_entropy": 0.681920882445643
+    },
+    "params": {
+      "ratio": 1.1796191983821531,
+      "coupling": 0.4305367177150563,
+      "i_ext": 1.4233890116927819,
+      "noise_strength": 0.2592696921343244,
+      "i_ext_hetero": 0.34427081297840295,
+      "theta_hetero": 0.4043073731023378,
+      "delay_jitter": 0.2744319681317327,
+      "slow_drive_sigma": 0.2841384021706821,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 66645
+    }
+  },
+  {
+    "score": -0.3036623090544043,
+    "metrics": {
+      "mean": 0.6174437775020377,
+      "std": 0.21156662099487816,
+      "fc": 0.030585697915354777,
+      "metastability": 0.008462490172719356,
+      "spectral_entropy": 0.6572153235390037
+    },
+    "params": {
+      "ratio": 0.9066952024379313,
+      "coupling": 0.5941774310677908,
+      "i_ext": 1.7838166443180385,
+      "noise_strength": 0.18981823643661022,
+      "i_ext_hetero": 0.2324497578246947,
+      "theta_hetero": 0.4445159917555898,
+      "delay_jitter": 0.3697691989595722,
+      "slow_drive_sigma": 0.2908766590098746,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 148640
+    }
+  },
+  {
+    "score": 3.7076439778862134,
+    "metrics": {
+      "mean": 0.5340167105647534,
+      "std": 0.21099484015230455,
+      "fc": 0.005208280723380988,
+      "metastability": 0.007186801533790943,
+      "spectral_entropy": 0.6259662679622677
+    },
+    "params": {
+      "ratio": 0.9552236551814943,
+      "coupling": 0.512721571998639,
+      "i_ext": 1.104497665953172,
+      "noise_strength": 0.16690572307939314,
+      "i_ext_hetero": 0.20241861894884208,
+      "theta_hetero": 0.4197049252943593,
+      "delay_jitter": 0.38149459649190515,
+      "slow_drive_sigma": 0.35729239412420793,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 323800
+    }
+  },
+  {
+    "score": -3.0844637909971677,
+    "metrics": {
+      "mean": 0.8040128633850997,
+      "std": 0.17878184826097857,
+      "fc": 0.038617713554431846,
+      "metastability": 0.012147387696830776,
+      "spectral_entropy": 0.5963095765160008
+    },
+    "params": {
+      "ratio": 1.123216934499192,
+      "coupling": 0.6611842627245265,
+      "i_ext": 0.918602410893626,
+      "noise_strength": 0.18038926206738642,
+      "i_ext_hetero": 0.3015577847784719,
+      "theta_hetero": 0.4290239135883998,
+      "delay_jitter": 0.34384124243354114,
+      "slow_drive_sigma": 0.31736405469145457,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 816672
+    }
+  },
+  {
+    "score": 0.16641423861738536,
+    "metrics": {
+      "mean": 0.32434510206426004,
+      "std": 0.16471620831692696,
+      "fc": 0.0074667386280709,
+      "metastability": 0.007630530262216402,
+      "spectral_entropy": 0.6818579640324103
+    },
+    "params": {
+      "ratio": 0.8003083248481686,
+      "coupling": 0.31197080684444445,
+      "i_ext": 1.6633773886099956,
+      "noise_strength": 0.19506564443340277,
+      "i_ext_hetero": 0.3258630299857089,
+      "theta_hetero": 0.3798580815579253,
+      "delay_jitter": 0.39763364646121035,
+      "slow_drive_sigma": 0.36325918989260536,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 924690
+    }
+  },
+  {
+    "score": -1.1533109975358384,
+    "metrics": {
+      "mean": 0.6780005344291847,
+      "std": 0.2368476878596989,
+      "fc": -0.005340659373077103,
+      "metastability": 0.00556581194243247,
+      "spectral_entropy": 0.7621270632455993
+    },
+    "params": {
+      "ratio": 1.1078592912234315,
+      "coupling": 0.42646154891915544,
+      "i_ext": 1.5650706366013738,
+      "noise_strength": 0.17416572202997901,
+      "i_ext_hetero": 0.3055457992773148,
+      "theta_hetero": 0.528134176488473,
+      "delay_jitter": 0.3488572904599463,
+      "slow_drive_sigma": 0.30399214998207796,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 324868
+    }
+  },
+  {
+    "score": 6.472216104195371,
+    "metrics": {
+      "mean": 0.41593240439797274,
+      "std": 0.19459196807398282,
+      "fc": 0.022982911915446446,
+      "metastability": 0.01028577856446906,
+      "spectral_entropy": 0.5536507723090692
+    },
+    "params": {
+      "ratio": 0.8042162517785016,
+      "coupling": 0.464115837151635,
+      "i_ext": 1.7910067604542768,
+      "noise_strength": 0.20821039736223312,
+      "i_ext_hetero": 0.21934240569424826,
+      "theta_hetero": 0.365042992342001,
+      "delay_jitter": 0.34110620676402564,
+      "slow_drive_sigma": 0.2560108040233665,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 813569
+    }
+  },
+  {
+    "score": 0.061091244235782494,
+    "metrics": {
+      "mean": 0.3030400722077123,
+      "std": 0.16975252378531344,
+      "fc": 0.0033533370631826376,
+      "metastability": 0.00832083930092268,
+      "spectral_entropy": 0.7728846401469859
+    },
+    "params": {
+      "ratio": 0.908849343318387,
+      "coupling": 0.2454908146774094,
+      "i_ext": 1.3567471360923846,
+      "noise_strength": 0.17244386677612253,
+      "i_ext_hetero": 0.2293316709546098,
+      "theta_hetero": 0.3874147885125602,
+      "delay_jitter": 0.3556864340312165,
+      "slow_drive_sigma": 0.24282648622212627,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 741504
+    }
+  },
+  {
+    "score": -3.5835983364289756,
+    "metrics": {
+      "mean": 0.8244443691235084,
+      "std": 0.14437097148567493,
+      "fc": 0.03179865037689393,
+      "metastability": 0.0127727723845162,
+      "spectral_entropy": 0.46905133696643053
+    },
+    "params": {
+      "ratio": 1.121301513344269,
+      "coupling": 0.6944019861804364,
+      "i_ext": 1.1471876306224378,
+      "noise_strength": 0.25307337654072,
+      "i_ext_hetero": 0.27576072464496115,
+      "theta_hetero": 0.3657162353124169,
+      "delay_jitter": 0.38693441521133626,
+      "slow_drive_sigma": 0.388363121724908,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 245246
+    }
+  },
+  {
+    "score": -3.4880485902918714,
+    "metrics": {
+      "mean": 0.6473223639006794,
+      "std": 0.25469054269856345,
+      "fc": -2.324386844092943e-05,
+      "metastability": 0.0055589291022453404,
+      "spectral_entropy": 0.6004823402444466
+    },
+    "params": {
+      "ratio": 1.1439691830394632,
+      "coupling": 0.4394920847372552,
+      "i_ext": 1.3232459880436176,
+      "noise_strength": 0.24919389196895292,
+      "i_ext_hetero": 0.28382313856969615,
+      "theta_hetero": 0.5145995157434106,
+      "delay_jitter": 0.26585901431192505,
+      "slow_drive_sigma": 0.21246271547570816,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 283894
+    }
+  },
+  {
+    "score": -3.4495998513422697,
+    "metrics": {
+      "mean": 0.8425432263303846,
+      "std": 0.1550798990124601,
+      "fc": 0.008201296643474291,
+      "metastability": 0.010599997610746863,
+      "spectral_entropy": 0.7466516749227431
+    },
+    "params": {
+      "ratio": 1.0792702961790228,
+      "coupling": 0.716813119598062,
+      "i_ext": 1.683368678009968,
+      "noise_strength": 0.21452796113155367,
+      "i_ext_hetero": 0.33110876515108356,
+      "theta_hetero": 0.47865125966864164,
+      "delay_jitter": 0.3917401414266078,
+      "slow_drive_sigma": 0.2750442582763068,
+      "global_noise_frac": 0.05,
+      "sin_amp": 0.05,
+      "sin_freq": 10.0,
+      "c_ie_base": 23.0,
+      "use_ou": true,
+      "ou_tau": 80.0,
+      "ou_sigma": 0.45,
+      "slow_drive_tau": 800.0,
+      "seed": 57062
+    }
+  }
+]

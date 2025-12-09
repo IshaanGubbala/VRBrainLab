@@ -39,15 +39,13 @@ class BrainDataLoader:
 
         self.num_regions = num_regions
 
-        # Create a realistic-looking connectivity matrix
-        # Using small-world network properties (clustered + some long-range connections)
+        # More biologically plausible sparse small-world network (~10-15% density)
         self.connectivity_matrix = self._generate_small_world_connectivity(num_regions)
 
         # Generate region labels (simplified anatomical naming)
         self.region_labels = self._generate_region_labels(num_regions)
 
-        # Generate tract lengths (connection delays) in mm
-        # Typical range: 10-200mm for intra-hemispheric, up to 300mm for cross-hemisphere
+        # Generate tract lengths (connection delays) in mm with realistic spread
         self.tract_lengths = self._generate_tract_lengths(self.connectivity_matrix)
 
         # Generate region centers (3D coordinates in mm, roughly brain-shaped)
@@ -148,11 +146,11 @@ class BrainDataLoader:
 
     def _generate_small_world_connectivity(self, n: int) -> np.ndarray:
         """
-        Generate a small-world-like connectivity matrix.
-        Brain networks exhibit small-world properties: high clustering + short paths.
+        Generate a sparse small-world-like connectivity matrix.
+        Target density ~10-15%, mix of local clusters and a few long-range links.
         """
         # Start with ring lattice (local connections)
-        k_neighbors = 6  # Each region connects to k nearest neighbors
+        k_neighbors = 4  # fewer neighbors for lower density
 
         conn = np.zeros((n, n))
 
@@ -161,17 +159,18 @@ class BrainDataLoader:
             for j in range(1, k_neighbors // 2 + 1):
                 neighbor_1 = (i + j) % n
                 neighbor_2 = (i - j) % n
-                # Connection weights (fiber density) - random but realistic
-                weight = np.random.uniform(0.5, 1.5)
+                # Connection weights with distance falloff
+                dist_scale = 1.0 / (1 + j)
+                weight = np.random.uniform(0.6, 1.2) * dist_scale
                 conn[i, neighbor_1] = weight
                 conn[i, neighbor_2] = weight
 
-        # Add long-range connections (small-world rewiring)
-        rewiring_prob = 0.15
+        # Add long-range connections (small-world rewiring) with lower probability
+        rewiring_prob = 0.08
         for i in range(n):
             for j in range(i + 1, n):
                 if conn[i, j] == 0 and np.random.random() < rewiring_prob:
-                    weight = np.random.uniform(0.3, 1.0)
+                    weight = np.random.uniform(0.4, 1.0)
                     conn[i, j] = weight
                     conn[j, i] = weight
 
@@ -180,6 +179,10 @@ class BrainDataLoader:
 
         # Zero diagonal (no self-connections)
         np.fill_diagonal(conn, 0)
+
+        # Normalize to keep weights in [0,1.5]
+        if np.max(conn) > 0:
+            conn = conn / np.max(conn) * 1.0
 
         return conn
 
@@ -219,11 +222,11 @@ class BrainDataLoader:
                     same_hemisphere = (i < n//2 and j < n//2) or (i >= n//2 and j >= n//2)
 
                     if same_hemisphere:
-                        # Intra-hemispheric: 10-150mm
-                        length = np.random.uniform(10, 150)
+                        # Intra-hemispheric: log-normal around ~60mm
+                        length = float(np.clip(np.random.lognormal(mean=4.1, sigma=0.35), 10, 150))
                     else:
                         # Inter-hemispheric (via corpus callosum): longer
-                        length = np.random.uniform(100, 250)
+                        length = float(np.clip(np.random.lognormal(mean=4.9, sigma=0.25), 80, 300))
 
                     tract_lengths[i, j] = length
                     tract_lengths[j, i] = length
