@@ -36,7 +36,9 @@ if str(ROOT) not in sys.path:
 from core.data_loader import BrainDataLoader, create_default_brain
 from core.simulator_fast import BrainNetworkSimulator, SimulationConfig
 from core.intervention import BrainIntervention
+from core.intervention import BrainIntervention
 from core.analysis import BrainActivityAnalyzer
+from core.experiments import experiment_controller
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -67,7 +69,7 @@ class BrainVRServer:
             host: Server host address
             port: Server port
         """
-        self.app = Flask(__name__)
+        self.app = Flask(__name__, static_folder='../web', static_url_path='')
         CORS(self.app)  # Enable CORS for Unity WebGL
         self.app.json_encoder = NumpyEncoder
 
@@ -545,8 +547,8 @@ class BrainVRServer:
                 'simulation_available': self.current_results is not None
             })
 
-        @self.app.route('/', methods=['GET'])
-        def index():
+        @self.app.route('/api', methods=['GET'])
+        def api_info():
             """Root endpoint with API info."""
             return jsonify({
                 'name': 'VR Brain Lab API',
@@ -556,9 +558,28 @@ class BrainVRServer:
                     'simulation': ['/api/simulation/run', '/api/simulation/status', '/api/simulation/data', '/api/simulation/activity_stream'],
                     'intervention': ['/api/intervention/lesion', '/api/intervention/stimulate', '/api/intervention/reset'],
                     'modes': ['/api/mode/drug', '/api/mode/stroke_progression', '/api/mode/plasticity'],
-                    'analysis': ['/api/analysis/metrics', '/api/analysis/vulnerability', '/api/analysis/report']
+                    'analysis': ['/api/analysis/metrics', '/api/analysis/vulnerability', '/api/analysis/report'],
+                    'experiments': ['/api/experiments/validate', '/api/experiments/regime_map']
                 }
             })
+
+        @self.app.route('/', methods=['GET'])
+        def index():
+            """Serve the Web Dashboard."""
+            return self.app.send_static_file('index.html')
+
+        # ===== EXPERIMENTS ENDPOINTS =====
+
+        @self.app.route('/api/experiments/validate', methods=['POST'])
+        def run_validation():
+            """Run physics validation suite."""
+            return jsonify(experiment_controller.run_physics_validation())
+
+        @self.app.route('/api/experiments/regime_map', methods=['POST'])
+        def run_regime_sweep():
+            """Run dynamical regime sweep."""
+            return jsonify(experiment_controller.run_regime_sweep())
+
 
     def run(self, debug: bool = False):
         """

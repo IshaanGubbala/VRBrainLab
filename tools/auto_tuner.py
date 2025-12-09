@@ -62,15 +62,32 @@ WEIGHTS = {
 # PARAMETER BOUNDS (tight, biologically plausible)
 # ============================================================================
 PARAM_BOUNDS = {
-    "global_coupling": (0.65, 0.85),
-    "I_ext": (0.65, 0.85),
-    "c_ee": (7.5, 10.5),
+    "global_coupling": (0.85, 1.05),
+    "I_ext": (0.85, 1.05),
+    "c_ee": (9.0, 12.0),
     "c_ie": (18.0, 22.0),
-    "noise_strength": (0.12, 0.18),
-    "theta_e": (3.2, 3.8),
-    "slow_drive_sigma": (0.50, 0.70),
-    "delay_jitter_pct": (0.10, 0.15),
+    "noise_strength": (0.13, 0.18),
+    "theta_e": (2.2, 2.7),
+    "slow_drive_sigma": (0.60, 0.80),
+    "delay_jitter_pct": (0.05, 0.15),
 }
+
+
+def load_config_params(path: Path) -> Dict[str, float]:
+    """Load parameter set from JSON (expects 'parameters' or top-level)."""
+    with open(path, "r") as f:
+        cfg = json.load(f)
+    params = cfg.get("parameters", cfg)
+    return {
+        "global_coupling": float(params.get("global_coupling", SimulationConfig.global_coupling)),
+        "I_ext": float(params.get("I_ext", SimulationConfig.I_ext)),
+        "c_ee": float(params.get("c_ee", SimulationConfig.c_ee)),
+        "c_ie": float(params.get("c_ie", SimulationConfig.c_ie)),
+        "noise_strength": float(params.get("noise_strength", SimulationConfig.noise_strength)),
+        "theta_e": float(params.get("theta_e", SimulationConfig.theta_e)),
+        "slow_drive_sigma": float(params.get("slow_drive_sigma", SimulationConfig.slow_drive_sigma)),
+        "delay_jitter_pct": float(params.get("delay_jitter_pct", SimulationConfig.delay_jitter_pct)),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -113,33 +130,49 @@ def compute_loss(metrics: Dict[str, float]) -> float:
 # ---------------------------------------------------------------------------
 # Evaluation
 # ---------------------------------------------------------------------------
-def evaluate_params(params: np.ndarray, brain: Dict, duration: float = 1500.0, backend: str = "numpy") -> Tuple[float, Dict]:
+def evaluate_params(params: np.ndarray, brain: Dict, duration: float = 1500.0, dt: float = 0.1,
+                    seeds: Optional[List[int]] = None, backend: str = "numpy") -> Tuple[float, Dict]:
     global_coupling, I_ext, c_ee, c_ie, noise, theta_e, slow_drive_sigma, delay_jitter = params
+    seeds = seeds or [42]
+    losses = []
+    metrics_list = []
 
-    config = SimulationConfig(
-        duration=duration,
-        transient=200.0,
-        dt=0.1,
-        global_coupling=float(global_coupling),
-        I_ext=float(I_ext),
-        c_ee=float(c_ee),
-        c_ie=float(c_ie),
-        noise_strength=float(noise),
-        theta_e=float(theta_e),
-        slow_drive_sigma=float(slow_drive_sigma),
-        delay_jitter_pct=float(delay_jitter),
-        backend=backend,
-    )
+    for s in seeds:
+        np.random.seed(s)
+        config = SimulationConfig(
+            duration=duration,
+            transient=200.0,
+            dt=dt,
+            global_coupling=float(global_coupling),
+            I_ext=float(I_ext),
+            c_ee=float(c_ee),
+            c_ie=float(c_ie),
+            noise_strength=float(noise),
+            theta_e=float(theta_e),
+            slow_drive_sigma=float(slow_drive_sigma),
+            delay_jitter_pct=float(delay_jitter),
+            heterogeneity_seed=s,
+            backend=backend,
+        )
 
-    try:
-        sim = BrainNetworkSimulator(brain, config, verbose=False)
-        results = sim.run_simulation(suppress_output=True)
-        activity = results["E"]
-        metrics = compute_metrics(activity)
-        loss = compute_loss(metrics)
-        return loss, metrics
-    except Exception as e:
-        print(f"  ⚠️  Simulation failed: {e}")
+        try:
+            sim = BrainNetworkSimulator(brain, config, verbose=False)
+            results = sim.run_simulation(suppress_output=True)
+            activity = results["E"]
+            metrics = compute_metrics(activity)
+            loss = compute_loss(metrics)
+            losses.append(loss)
+            metrics_list.append(metrics)
+        except Exception as e:
+            print(f"  ⚠️  Simulation failed (seed {s}): {e}")
+            losses.append(1e6)
+
+    if metrics_list:
+        avg_metrics = {}
+        for key in metrics_list[0].keys():
+            avg_metrics[key] = float(np.mean([m[key] for m in metrics_list]))
+        return float(np.mean(losses)), avg_metrics
+    else:
         return 1e6, {}
 
 
@@ -159,6 +192,21 @@ def lhs_samples(n_samples: int, bounds: List[Tuple[float, float]], rng: np.rando
     for j, (lo, hi) in enumerate(bounds):
         rdpoints[:, j] = lo + rdpoints[:, j] * (hi - lo)
     return rdpoints
+
+
+def params_to_vec(params: Dict[str, float]) -> np.ndarray:
+    """Convert params dict to vector in the optimizer order."""
+    order = [
+        "global_coupling",
+        "I_ext",
+        "c_ee",
+        "c_ie",
+        "noise_strength",
+        "theta_e",
+        "slow_drive_sigma",
+        "delay_jitter_pct",
+    ]
+    return np.array([params[k] for k in order], dtype=float)
 
 
 class LogBook:
@@ -224,9 +272,12 @@ def run_optimization(
     max_iters_lhs: int = 40,
     max_iters_refine: int = 60,
     duration: float = 1500.0,
+    dt: float = 0.1,
+    seeds: Optional[List[int]] = None,
     backend: str = "numpy",
     log_dir: Path = Path("tuner_logs"),
     seed: int = 42,
+    center_params: Optional[Dict[str, float]] = None,
 ) -> Dict:
     print("\n🔧 Running two-phase optimization...")
     print(f"   LHS samples: {max_iters_lhs}")
@@ -253,12 +304,18 @@ def run_optimization(
 
     # Phase 1: LHS exploration
     lhs = lhs_samples(max_iters_lhs, bounds, rng)
+    if center_params is not None and len(lhs) > 0:
+        center_vec = params_to_vec(center_params)
+        # Clip to bounds to be safe
+        for j, (lo, hi) in enumerate(bounds):
+            center_vec[j] = np.clip(center_vec[j], lo, hi)
+        lhs[0] = center_vec
     best_loss = float("inf")
     best_metrics: Dict[str, float] = {}
     best_params: Optional[np.ndarray] = None
 
     for i, p in enumerate(lhs, 1):
-        loss, metrics = evaluate_params(p, brain, duration, backend=backend)
+        loss, metrics = evaluate_params(p, brain, duration, dt=dt, seeds=seeds, backend=backend)
         logger.add("lhs", p, loss, metrics)
         if loss < best_loss:
             best_loss = float(loss)
@@ -276,7 +333,7 @@ def run_optimization(
 
     def nm_objective(x):
         nonlocal refine_count, refine_best, refine_best_params
-        loss, metrics = evaluate_params(x, brain, duration, backend=backend)
+        loss, metrics = evaluate_params(x, brain, duration, dt=dt, seeds=seeds, backend=backend)
         logger.add("refine", x, loss, metrics)
         refine_count += 1
 
@@ -322,6 +379,7 @@ def run_optimization(
         "loss": best_record["loss"],
         "metrics": best_record["metrics"],
         "iterations": len(logger.records),
+        "history": logger.records,
         "time": elapsed,
         "log_dir": str(log_dir),
     }
@@ -375,16 +433,22 @@ def main():
     parser.add_argument("--backend", choices=["numpy", "torch"], default="numpy", help="Simulation backend")
     parser.add_argument("--log-dir", type=str, default="tuner_logs", help="Directory to save logs/plots")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    parser.add_argument("--config", type=str, default=None, help="Path to JSON config to warm-start LHS (center the first sample)")
+    parser.add_argument("--seeds", type=str, default="42", help="Comma-separated seeds to average over (e.g., 42 or 0,1,2)")
+    parser.add_argument("--duration", type=float, default=None, help="Override simulation duration (ms)")
+    parser.add_argument("--dt", type=float, default=None, help="Override simulation timestep (ms)")
     args = parser.parse_args()
 
     if args.quick:
         lhs_samples = 20
         refine_iters = 30
-        duration = 800.0
+        duration = args.duration if args.duration is not None else 800.0
+        dt = args.dt if args.dt is not None else 0.3
     else:
         lhs_samples = args.lhs_samples
         refine_iters = args.refine_iters
-        duration = 1500.0
+        duration = args.duration if args.duration is not None else 1500.0
+        dt = args.dt if args.dt is not None else 0.1
 
     print("╔" + "═" * 70 + "╗")
     print("║" + " " * 20 + "FAST PARAMETER OPTIMIZER" + " " * 25 + "║")
@@ -397,14 +461,20 @@ def main():
     for key, val in TARGETS.items():
         print(f"   {key}: {val}")
 
+    center_params = load_config_params(Path(args.config)) if args.config else None
+    seeds = [int(s.strip()) for s in args.seeds.split(",") if s.strip()]
+
     result = run_optimization(
         brain,
         max_iters_lhs=lhs_samples,
         max_iters_refine=refine_iters,
         duration=duration,
+        dt=dt,
+        seeds=seeds,
         backend=args.backend,
         log_dir=Path(args.log_dir),
         seed=args.seed,
+        center_params=center_params,
     )
 
     print("\n" + "=" * 70)

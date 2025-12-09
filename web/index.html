@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VR Brain Lab | Control Center</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="brand">
+                <i class="fa-solid fa-brain"></i>
+                <span>Brain Lab</span>
+            </div>
+            
+            <ul class="nav-links">
+                <li class="active" onclick="switchTab('dashboard')">
+                    <i class="fa-solid fa-gauge-high"></i> Dashboard
+                </li>
+                <li onclick="switchTab('experiments')">
+                    <i class="fa-solid fa-flask"></i> Experiments
+                </li>
+                <li onclick="switchTab('tuning')">
+                    <i class="fa-solid fa-sliders"></i> Tuning
+                </li>
+                <li onclick="switchTab('intervention')">
+                    <i class="fa-solid fa-bolt"></i> Intervention
+                </li>
+                <div class="spacer"></div>
+                <li onclick="refreshConnection()">
+                    <i class="fa-solid fa-rotate"></i> Reconnect
+                </li>
+            </ul>
+            
+            <div class="status-panel">
+                <div class="status-item">
+                    <span class="label">Status</span>
+                    <span class="value" id="status-text">Ready</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Sim</span>
+                    <div class="status-indicator" id="sim-indicator"></div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content-area">
+            
+            <!-- Dashboard Tab -->
+            <section id="tab-dashboard" class="tab-content active">
+                <header>
+                    <h1>Real-time Monitoring</h1>
+                    <div class="controls">
+                        <button class="btn primary" onclick="startSimulation()">
+                            <i class="fa-solid fa-play"></i> Run Sim
+                        </button>
+                        <button class="btn secondary" onclick="stopSimulation()">
+                            <i class="fa-solid fa-stop"></i> Stop
+                        </button>
+                    </div>
+                </header>
+                
+                <div class="grid-layout">
+                    <!-- Main Activity Plot -->
+                    <div class="card wide">
+                        <h3>Global Mean Field Activity</h3>
+                        <div class="chart-container">
+                            <canvas id="activityChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Metrics Panel -->
+                    <div class="card">
+                        <h3>Current Metrics</h3>
+                        <div class="metrics-list" id="metrics-list">
+                            <div class="metric">
+                                <span class="label">Mean Activity</span>
+                                <span class="val" id="m-mean">--</span>
+                            </div>
+                            <div class="metric">
+                                <span class="label">Synchrony</span>
+                                <span class="val" id="m-sync">--</span>
+                            </div>
+                            <div class="metric">
+                                <span class="label">Alpha Power</span>
+                                <span class="val" id="m-alpha">--</span>
+                            </div>
+                             <div class="metric">
+                                <span class="label">Metastability</span>
+                                <span class="val" id="m-meta">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                     <!-- Brain Info -->
+                    <div class="card">
+                         <h3>Brain Model</h3>
+                        <div class="metrics-list">
+                            <div class="metric">
+                                <span class="label">Regions</span>
+                                <span class="val" id="b-regions">--</span>
+                            </div>
+                            <div class="metric">
+                                <span class="label">Connections</span>
+                                <span class="val" id="b-conns">--</span>
+                            </div>
+                           <button class="btn small" onclick="loadBrain()">Reload Default</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Experiments Tab -->
+            <section id="tab-experiments" class="tab-content">
+                <header>
+                    <h1>Experiments & Validation</h1>
+                </header>
+                
+                <div class="grid-layout">
+                    <div class="card">
+                        <h3>Physics Validation</h3>
+                        <p>Run standard biophysics checks (Alpha peak, Entrainment).</p>
+                        <button class="btn primary" onclick="runValidation()">Run Validation Suite</button>
+                        <div id="validation-results" class="console-output"></div>
+                    </div>
+                    
+                    <div class="card wide">
+                        <h3>Dynamical Regime Map</h3>
+                        <p>Sweep Coupling vs Input to map stability zones.</p>
+                        <button class="btn primary" onclick="runRegimeSweep()">Generate Map</button>
+                        <div class="chart-container">
+                            <canvas id="regimeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Tuning Tab (Placeholder) -->
+             <section id="tab-tuning" class="tab-content">
+                <header>
+                    <h1>Parameter Tuning</h1>
+                </header>
+                <div class="card full-height">
+                    <p>Auto-tuner integration coming soon. Use terminal for now.</p>
+                </div>
+            </section>
+
+            <!-- Intervention Tab -->
+            <section id="tab-intervention" class="tab-content">
+                 <header><h1>Interventions</h1></header>
+                 <div class="grid-layout">
+                     <div class="card">
+                         <h3>Stimulation</h3>
+                         <div class="form-group">
+                             <label>Region Index</label>
+                             <input type="number" id="stim-region" value="0">
+                         </div>
+                         <div class="form-group">
+                             <label>Amplitude</label>
+                             <input type="number" id="stim-amp" value="1.0">
+                         </div>
+                         <button class="btn warning" onclick="applyStimulation()">Apply Pulse</button>
+                     </div>
+                     <div class="card">
+                         <h3>Lesion</h3>
+                          <div class="form-group">
+                             <label>Region Index</label>
+                             <input type="number" id="lesion-region" value="0">
+                         </div>
+                         <button class="btn danger" onclick="applyLesion()">Destroy Region</button>
+                         <button class="btn secondary" onclick="resetInterventions()">Reset All</button>
+                     </div>
+                 </div>
+            </section>
+
+        </main>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

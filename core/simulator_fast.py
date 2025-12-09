@@ -28,36 +28,36 @@ class SimulationConfig:
     transient: float = 200.0  # Transient period to discard (ms)
 
     # Coupling parameters
-    global_coupling: float = 0.792  # More realistic moderate coupling
+    global_coupling: float = 1.046  # More realistic moderate coupling
     conduction_velocity: float = 3.0  # Axonal conduction velocity (mm/ms)
 
     # Neural mass model parameters (Wilson-Cowan-like)
     tau_e: float = 10.0  # Excitatory time constant (ms)
     tau_i: float = 20.0  # Inhibitory time constant (ms)
-    c_ee: float = 8.841  # E→E coupling
+    c_ee: float = 9.768  # E→E coupling
     c_ei: float = 12.0  # E→I coupling
-    c_ie: float = 16.796  # I→E coupling
+    c_ie: float = 22.889  # I→E coupling
     c_ii: float = 3.0   # I→I coupling
-    I_ext: float = 0.860  # External drive
-    noise_strength: float = 0.132  # Noise for fluctuations
+    I_ext: float = 0.834  # External drive
+    noise_strength: float = 0.152  # Noise for fluctuations
 
     # Activation function parameters (sigmoid)
     a_e: float = 0.7  # Reduced gain for smoother transitions
-    theta_e: float = 2.821  # Lower threshold with gentler sigmoid
+    theta_e: float = 2.721  # Lower threshold with gentler sigmoid
     a_i: float = 1.0  # Reduced inhibitory gain
     theta_i: float = 2.5  # Adjusted relative to theta_e
 
     # Heterogeneity controls
     i_ext_heterogeneity: float = 0.15  # Fractional std for region-wise I_ext jitter
     theta_e_heterogeneity: float = 0.25  # Absolute std for region-wise theta_e jitter
-    delay_jitter_pct: float = 0.144  # Fractional jitter on delays (0.1 = ±10%)
+    delay_jitter_pct: float = 0.062  # Fractional jitter on delays (0.1 = ±10%)
     heterogeneity_seed: Optional[int] = None  # Seed for reproducible jitter
 
     # Temporal modulation / colored noise
     use_ou_noise: bool = True  # Use Ornstein-Uhlenbeck colored noise instead of pure white
     ou_tau: float = 60.0  # OU time constant (ms)
     ou_sigma: float = 0.5  # OU noise amplitude
-    slow_drive_sigma: float = 0.611  # Slow common drive amplitude (OU)
+    slow_drive_sigma: float = 0.613  # Slow common drive amplitude (OU)
     slow_drive_tau: float = 800.0  # Slow drive time constant (ms)
     global_noise_frac: float = 0.05  # Fraction of noise that is shared across regions (0-1)
     sin_drive_amp: float = 0.03  # Amplitude of sinusoidal drive (added to both E/I)
@@ -329,6 +329,7 @@ class BrainNetworkSimulator:
 
     def run_simulation(self,
                       initial_state: Optional[np.ndarray] = None,
+                      I_stim: Optional[np.ndarray] = None,
                       save_interval: int = 1,
                       progress_callback: Optional[Callable] = None,
                       suppress_output: bool = False) -> Dict:
@@ -336,7 +337,8 @@ class BrainNetworkSimulator:
         Run the brain network simulation (OPTIMIZED VERSION).
 
         Args:
-            initial_state: Optional initial conditions
+            initial_state: Optional initial conditions (num_regions, 2)
+            I_stim: Optional external stimulus array (num_steps, num_regions), or (num_steps, num_regions, 2)
             save_interval: Save every N timesteps (to reduce memory)
             progress_callback: Optional function to call with progress updates
 
@@ -404,7 +406,19 @@ class BrainNetworkSimulator:
                 sin_val = self.config.sin_drive_amp * np.sin(2 * np.pi * self.config.sin_drive_freq_hz * t_sec + sin_phase)
                 noise[:, 0] += sin_val
                 noise[:, 1] += sin_val
-
+            
+            # External Stimulus (I_stim)
+            if I_stim is not None:
+                # Handle stimulus duration mismatch gracefully
+                if step < len(I_stim):
+                    stim_t = I_stim[step]
+                    if stim_t.ndim == 1:
+                        # (num_regions,) -> Apply to Excitatory ONLY (standard DBS/TMS model)
+                        noise[:, 0] += stim_t
+                    elif stim_t.ndim == 2:
+                        # (num_regions, 2) -> Apply to E and I specifically
+                        noise += stim_t
+            
             # Get delayed coupling input (FAST VERSION)
             coupling = self._get_delayed_coupling_fast(step)
 

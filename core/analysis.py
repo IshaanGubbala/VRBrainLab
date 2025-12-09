@@ -483,6 +483,108 @@ class BrainActivityAnalyzer:
             'most_affected_regions': most_affected
         }
 
+    def compare_to_empirical(self, empirical_fc: np.ndarray) -> Dict:
+        """
+        Compare simulated FC to empirical (resting-state) FC.
+
+        Args:
+            empirical_fc: Observed functional connectivity matrix (n_regions x n_regions)
+
+        Returns:
+            Dictionary with similarity metrics
+        """
+        print("Comparing to empirical data...")
+
+        if empirical_fc.shape != (self.num_regions, self.num_regions):
+            print(f"⚠️ Warning: Empirical FC shape {empirical_fc.shape} matches region count {self.num_regions}")
+            # Try to resize/trim if needed (omitted for safety)
+
+        simulated_fc = self._functional_connectivity()
+
+        # Extract upper triangles (excluding diagonal)
+        sim_vals = simulated_fc[np.triu_indices_from(simulated_fc, k=1)]
+        emp_vals = empirical_fc[np.triu_indices_from(empirical_fc, k=1)]
+
+        # Handle NaNs
+        valid_mask = np.isfinite(sim_vals) & np.isfinite(emp_vals)
+        if not np.any(valid_mask):
+            return {'correlation': 0.0, 'euclidean_distance': np.inf}
+            
+        sim_vals = sim_vals[valid_mask]
+        emp_vals = emp_vals[valid_mask]
+
+        # Pearson correlation
+        correlation, _ = stats.pearsonr(sim_vals, emp_vals)
+        
+        # Euclidean distance (normalized)
+        distance = np.linalg.norm(sim_vals - emp_vals) / np.sqrt(len(sim_vals))
+
+        print(f"✓ Measured similarity: r={correlation:.3f}")
+
+        return {
+            'correlation': float(correlation),
+            'euclidean_distance': float(distance),
+            'simulated_fc': simulated_fc,  # Return for plotting
+            'empirical_fc': empirical_fc
+        }
+
+    def compute_power_spectra(self, region_idx: Optional[int] = None) -> Dict:
+        """
+        Compute Power Spectral Density (PSD) using Welch's method.
+
+        Args:
+            region_idx: Optional index to compute for a specific region. 
+                        If None, computes global mean field.
+
+        Returns:
+            Dictionary with 'freqs', 'psd', and band powers
+        """
+        print("Computing power spectra...")
+        
+        dt = np.mean(np.diff(self.time))  # ms
+        fs = 1000.0 / dt  # Hz
+
+        if region_idx is not None:
+            # Single region
+            signal_data = self.activity_E[:, region_idx]
+        else:
+            # Global mean field
+            signal_data = np.mean(self.activity_E, axis=1)
+
+        # Welch's method
+        # Use 2-second window for good low-frequency resolution
+        nperseg = int(2.0 * fs)
+        if nperseg > len(signal_data):
+            nperseg = len(signal_data)
+        
+        freqs, psd = signal.welch(signal_data, fs=fs, nperseg=nperseg)
+
+        # Extract band powers
+        bands = {
+            'delta': (0.5, 4),
+            'theta': (4, 8),
+            'alpha': (8, 13),
+            'beta': (13, 30),
+            'gamma': (30, 80)
+        }
+        
+        band_powers = {}
+        total_power = np.sum(psd)
+        
+        for band, (low, high) in bands.items():
+            mask = (freqs >= low) & (freqs < high)
+            if np.any(mask):
+                band_powers[band] = np.sum(psd[mask]) / total_power
+            else:
+                band_powers[band] = 0.0
+
+        return {
+            'freqs': freqs,
+            'psd': psd,
+            'band_powers': band_powers,
+            'peak_freq': freqs[np.argmax(psd)]
+        }
+
     # ========== REPORT GENERATION ==========
 
     def generate_report(self) -> str:
