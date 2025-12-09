@@ -8,15 +8,25 @@ let simulationRunning = false;
 let pollingInterval = null;
 let charts = {};
 let lastStreamIdx = 0;
+let brainViz = null;
+let tuningRunning = false;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();
+    
+    // Init 3D Viz (after scripts load)
+    if(window.BrainViz) {
+        brainViz = new BrainViz('brain-viz');
+        brainViz.loadBrain(); // Load geometry
+    }
+
     checkStatus();
     loadBrainInfo();
     
     // Start polling loop
     setInterval(updateDashboard, 1000);
+    setInterval(checkTuningStatus, 2000); // Check tuner every 2s
 });
 
 // --- Tab Navigation ---
@@ -24,12 +34,8 @@ function switchTab(tabId) {
     document.querySelectorAll('.nav-links li').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     
-    // Find nav item by text (hacky but works for now) or index. 
-    // Actually, I attached onClick inline.
-    // Let's just find the one with matching onclick
-    // Simplified: Just restart active class logic
     const navItems = document.querySelectorAll('.nav-links li');
-    const tabs = ['dashboard', 'experiments', 'tuning', 'intervention'];
+    const tabs = ['dashboard', 'experiments', 'tuning', 'ai', 'intervention'];
     const idx = tabs.indexOf(tabId);
     if(idx >= 0) navItems[idx].classList.add('active');
     
@@ -63,6 +69,54 @@ function initCharts() {
             plugins: { legend: { display: false } }
         }
     });
+
+    // 2. Latent Space (Scatter)
+    const ctx2 = document.getElementById('latentChart').getContext('2d');
+    charts.latent = new Chart(ctx2, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Activity Trajectory',
+                data: [],
+                borderColor: '#e0af68',
+                backgroundColor: 'rgba(224, 175, 104, 0.2)',
+                showLine: true,
+                pointRadius: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { grid: { color: '#24283b' }, title: {display: true, text: 'PC 1'} },
+                y: { grid: { color: '#24283b' }, title: {display: true, text: 'PC 2'} }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // 3. Therapy Optimization
+    const ctx3 = document.getElementById('therapyChart').getContext('2d');
+    charts.therapy = new Chart(ctx3, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Score (Alpha Power)',
+                data: [],
+                borderColor: '#9ece6a',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { grid: { color: '#24283b' } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
 }
 
 // --- Simulation Control ---
@@ -88,8 +142,6 @@ async function startSimulation() {
 }
 
 async function stopSimulation() {
-    // Current backend doesn't support "stop", it just runs fixed duration.
-    // We can just stop polling.
     simulationRunning = false;
     updateStatus('Stopped', false);
 }
@@ -151,6 +203,12 @@ async function updateDashboard() {
             // Update metrics (simple current value)
             const currentMean = newAct[newAct.length-1];
             document.getElementById('m-mean').innerText = currentMean.toFixed(3);
+
+            // Update 3D Viz (use latest frame)
+            if(brainViz && data.activity.length > 0) {
+               const latestActivity = data.activity[data.activity.length-1];
+               brainViz.updateActivity(latestActivity);
+            }
         }
         
         if(data.done && simulationRunning) {
@@ -226,10 +284,7 @@ async function runRegimeSweep() {
         const w = canvas.width / cols;
         const h = canvas.height / rows;
         
-        // Fix coordinates for canvas (origin top-left vs plot bottom-left)
-        // Usually index [0][0] corresponds to min x, min y.
-        // Heatmap array is likely [input_row][coupling_col] based on sweep loop.
-        
+        // Fix coordinates for canvas
         for(let r=0; r<rows; r++) { // Input (Y)
              for(let c=0; c<cols; c++) { // Coupling (X)
                  const val = heatmap[r][c];
@@ -245,6 +300,50 @@ async function runRegimeSweep() {
         console.error("Map failed", e);
     }
 }
+
+async function runAIDiagnostics() {
+    const label = document.getElementById('ai-state-label');
+    const conf = document.getElementById('ai-confidence');
+    
+    label.innerText = "Analyzing...";
+    label.style.color = "#7aa2f7";
+    
+    try {
+        const res = await fetch(`${API_BASE}/experiments/ai_diagnostics`, { method: 'POST' });
+        const data = await res.json();
+        
+        if(data.error) {
+             label.innerText = "Error: " + data.error;
+             return;
+        }
+        
+        // 1. Update text
+        const cls = data.classification;
+        label.innerText = cls.label;
+        conf.innerText = `Confidence: ${(cls.confidence * 100).toFixed(1)}%`;
+        
+        // Color code
+        if(cls.label.includes("Healthy")) label.style.color = "#9ece6a";
+        else if(cls.label.includes("Seizure")) label.style.color = "#f7768e";
+        else label.style.color = "#e0af68";
+        
+        // Metrics
+        document.getElementById('ai-m-alpha').innerText = data.metrics.alpha_power?.toFixed(3);
+        document.getElementById('ai-m-meta').innerText = data.metrics.metastability?.toFixed(3);
+        
+        // 2. Update Plot
+        const traj = data.latent_trajectory;
+        const pts = traj.x.map((x, i) => ({ x: x, y: traj.y[i] }));
+        
+        charts.latent.data.datasets[0].data = pts;
+        charts.latent.update();
+        
+    } catch(e) {
+        console.error("AI Diag failed", e);
+        label.innerText = "Failed";
+    }
+}
+
 
 // --- Interventions ---
 async function applyStimulation() {
@@ -273,6 +372,106 @@ async function resetInterventions() {
     alert("Reset done");
 }
 
+async function runTherapy() {
+    const btn = document.querySelector('button[onclick="runTherapy()"]');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Optimizing...';
+    btn.disabled = true;
+    
+    try {
+        const res = await fetch(`${API_BASE}/experiments/therapy`, { method: 'POST' });
+        const data = await res.json();
+        
+        // Update Metrics
+        document.getElementById('opt-best-amp').innerText = data.best_params.amplitude.toFixed(2);
+        document.getElementById('opt-best-score').innerText = data.best_score.toFixed(4);
+        
+        // Update Chart
+        const hist = data.history;
+        charts.therapy.data.labels = hist.map(h => h.step);
+        charts.therapy.data.datasets[0].data = hist.map(h => h.score);
+        charts.therapy.update();
+        
+        alert(`Optimization Complete! Best Amplitude: ${data.best_params.amplitude.toFixed(2)}`);
+        
+    } catch(e) {
+        console.error("Therapy failed", e);
+        alert("Optimization failed.");
+    } finally {
+        btn.innerHTML = oldText;
+        btn.disabled = false;
+    }
+}
+
+
+
+async function startTuning() {
+    try {
+        const res = await fetch(`${API_BASE}/experiments/tune/start`, { method: 'POST' });
+        const data = await res.json();
+        if(data.status === 'started') {
+            tuningRunning = true;
+            document.getElementById('tuning-status').innerText = "Status: Running...";
+            document.getElementById('tuning-status').style.color = "#e0af68";
+            alert("Tuner started in background. This may take 1-2 minutes.");
+        } else {
+            alert("Could not start tuner: " + data.message);
+        }
+    } catch(e) {
+        console.error("Tune start failed", e);
+    }
+}
+
+async function checkTuningStatus() {
+    if(!tuningRunning) return;
+    
+    try {
+        const res = await fetch(`${API_BASE}/experiments/tune/status`);
+        const data = await res.json();
+        
+        if(data.status === 'complete') {
+            tuningRunning = false;
+            document.getElementById('tuning-status').innerText = "Status: Complete ✅";
+            document.getElementById('tuning-status').style.color = "#9ece6a";
+            renderTunerResults(data.result);
+        } else if(data.status === 'failed') {
+            tuningRunning = false;
+            document.getElementById('tuning-status').innerText = "Status: Failed ❌";
+            document.getElementById('tuning-status').style.color = "#f7768e";
+        }
+        // If running, do nothing (wait)
+    } catch(e) {
+        console.error("Tune check failed", e);
+    }
+}
+
+function renderTunerResults(result) {
+    // Params
+    const pList = document.getElementById('tune-params-list');
+    pList.innerHTML = '';
+    for(const [k, v] of Object.entries(result.params)) {
+        pList.innerHTML += `
+            <div class="metric">
+                <span class="label">${k}</span>
+                <span class="val">${v.toFixed(3)}</span>
+            </div>`;
+    }
+    
+    // Metrics (Loss)
+    document.getElementById('tune-loss').innerText = result.loss.toFixed(4);
+    
+    const mList = document.getElementById('tune-metrics-list');
+    mList.innerHTML = '';
+    for(const [k, v] of Object.entries(result.metrics)) {
+         mList.innerHTML += `
+            <div class="metric">
+                <span class="label">${k}</span>
+                <span class="val">${v.toFixed(3)}</span>
+            </div>`;
+    }
+}
+
+// ... existing resize code ...
 /* Helper: Resize canvas to parent */
 function resizeCanvas() {
     const cvs = document.querySelectorAll('canvas');

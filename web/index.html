@@ -9,6 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -30,6 +33,9 @@
                 </li>
                 <li onclick="switchTab('tuning')">
                     <i class="fa-solid fa-sliders"></i> Tuning
+                </li>
+                 <li onclick="switchTab('ai')">
+                    <i class="fa-solid fa-robot"></i> AI Diagnostics
                 </li>
                 <li onclick="switchTab('intervention')">
                     <i class="fa-solid fa-bolt"></i> Intervention
@@ -70,6 +76,12 @@
                 </header>
                 
                 <div class="grid-layout">
+                    <!-- 3D Brain Viz -->
+                    <div class="card wide full-height">
+                        <h3>3D Brain Activity</h3>
+                        <div id="brain-viz" style="width: 100%; height: 400px; position: relative; border-radius: 8px; overflow: hidden;"></div>
+                    </div>
+
                     <!-- Main Activity Plot -->
                     <div class="card wide">
                         <h3>Global Mean Field Activity</h3>
@@ -143,14 +155,121 @@
                     </div>
                 </div>
             </section>
+            <!-- AI Diagnostics Tab -->
+            <section id="tab-ai" class="tab-content">
+                <header>
+                    <h1>AI Diagnostics & Prognostics</h1>
+                    <div class="controls">
+                         <button class="btn primary" onclick="runAIDiagnostics()">
+                            <i class="fa-solid fa-microchip"></i> Analyze Current State
+                        </button>
+                    </div>
+                </header>
+                
+                <div class="grid-layout">
+                    <!-- Classification Result -->
+                    <div class="card">
+                        <h3>Brain State Classification</h3>
+                        <div style="text-align: center; padding: 20px;">
+                            <div id="ai-state-label" style="font-size: 2rem; font-weight: 800; color: var(--text-secondary);">--</div>
+                            <div id="ai-confidence" style="color: var(--text-secondary); margin-top: 10px;">Confidence: --</div>
+                        </div>
+                        <div class="metrics-list" style="margin-top: 20px;">
+                             <div class="metric">
+                                <span class="label">Alpha Power</span>
+                                <span class="val" id="ai-m-alpha">--</span>
+                            </div>
+                             <div class="metric">
+                                <span class="label">Metastability</span>
+                                <span class="val" id="ai-m-meta">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Latent Space Trajectory -->
+                    <div class="card wide">
+                        <h3>Biomarker Manifold (Latent Space)</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 10px;">
+                            Principal Component Analysis (PCA) projection of 68-region dynamics. 
+                            Healthy states form limit cycles; Seizures form fixed points.
+                        </p>
+                        <div class="chart-container">
+                            <canvas id="latentChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Neurotherapy Agent -->
+                    <div class="card wide">
+                         <header style="margin-bottom:15px; border-bottom:1px solid #24283b; padding-bottom:10px;">
+                            <h3>AI-Guided Neurotherapy</h3>
+                            <button class="btn warning" onclick="runTherapy()">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Optimize Stimulation
+                            </button>
+                        </header>
+                         <div class="grid-layout">
+                            <div>
+                                <p style="margin-bottom:10px; font-size:0.9rem;">
+                                    Agent explores stimulation parameters to maximize 
+                                    <strong style="color:var(--accent);">Alpha Power</strong> (8-13Hz).
+                                </p>
+                                <div class="metric">
+                                    <span class="label">Best Amplitude</span>
+                                    <span class="val" id="opt-best-amp">--</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="label">Best Score</span>
+                                    <span class="val" id="opt-best-score">--</span>
+                                </div>
+                            </div>
+                            <div class="chart-container" style="height:200px;">
+                                <canvas id="therapyChart"></canvas>
+                            </div>
+                         </div>
+                    </div>
+                </div>
+            </section>
             
-            <!-- Tuning Tab (Placeholder) -->
-             <section id="tab-tuning" class="tab-content">
+            <!-- Tuning Tab -->
+            <section id="tab-tuning" class="tab-content">
                 <header>
                     <h1>Parameter Tuning</h1>
                 </header>
-                <div class="card full-height">
-                    <p>Auto-tuner integration coming soon. Use terminal for now.</p>
+                <div class="card wide">
+                    <h3>Automated Model Optimization</h3>
+                    <p style="margin-bottom:20px; color:var(--text-secondary);">
+                        Uses Latin Hypercube Sampling followed by Nelder-Mead optimization to find 
+                        parameters that match empirical brain dynamics (FC, Metastability, Alpha power).
+                    </p>
+                    
+                    <div style="display:flex; align-items:center; gap:20px; margin-bottom:20px;">
+                        <button class="btn primary" onclick="startTuning()">
+                            <i class="fa-solid fa-play"></i> Start Auto-Tuner
+                        </button>
+                        <div id="tuning-status" style="font-weight:bold; color:var(--text-secondary);">
+                            Status: Idle
+                        </div>
+                    </div>
+                    
+                    <div class="grid-layout">
+                        <!-- Best Params -->
+                        <div class="card">
+                            <h4>Best Parameters Found</h4>
+                            <div class="metrics-list" id="tune-params-list">
+                                <div style="color:var(--text-secondary); padding:10px;">Run tuner to see results...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Best Metrics -->
+                        <div class="card">
+                            <h4>Target Agreement (Loss)</h4>
+                            <div class="metrics-list" id="tune-metrics-list">
+                                <div style="color:var(--text-secondary); padding:10px;">--</div>
+                            </div>
+                            <div style="margin-top:10px; font-weight:bold; color:var(--accent);">
+                                Final Loss: <span id="tune-loss">--</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 

@@ -20,6 +20,9 @@ from dataclasses import asdict
 from core.data_loader import create_default_brain
 from core.simulator_fast import BrainNetworkSimulator, SimulationConfig
 from core.analysis import BrainActivityAnalyzer
+from core.ai_models import classifier, reducer
+from core.ai_optimizer import NeuroOptimizer
+from core.auto_tuner import run_optimization
 
 # Try importing optuna for tuner, handle if missing
 try:
@@ -38,6 +41,12 @@ class ExperimentController:
         self.brain = create_default_brain()
         self.current_simulation = None
         self.lock = threading.Lock()
+        self.optimizer = NeuroOptimizer(self.brain)
+        
+        # Async Tuner State
+        self.tuner_thread = None
+        self.tuner_status = "idle"
+        self.tuner_result = None
         
     def run_physics_validation(self) -> Dict[str, Any]:
         """
@@ -186,8 +195,7 @@ class ExperimentController:
         metrics = analyzer.compute_temporal_metrics()
         
         # Downsample for web display (max 1000 points)
-        step = max(1, len(res['time']) // 1000)
-        
+        step = max(1, len(res['time']) // 1000)        
         return {
             "time": res['time'][::step].tolist(),
             "activity": np.mean(res['E'], axis=1)[::step].tolist(),
@@ -195,5 +203,96 @@ class ExperimentController:
             "config": asdict(base_cfg)
         }
 
+    def analyze_simulation_ai(self, results=None) -> Dict[str, Any]:
+        """
+        Run AI diagnostics on simulation results.
+        Propagates data through Classifier and Autoencoder.
+        """
+        # Use provided results or last run
+        data = results if results else self.current_simulation
+        if data is None:
+            return {"error": "No simulation data"}
+            
+        # 1. Extract standard metrics
+        analyzer = BrainActivityAnalyzer(data)
+        metrics = analyzer.compute_temporal_metrics()
+        
+        # Add spectral power for classifier
+        spectra = analyzer.compute_power_spectra()
+        metrics['alpha_power'] = spectra['band_powers']['alpha']
+        
+        # 2. Classify State
+        state = classifier.predict(metrics)
+        
+        # 3. Dimensionality Reduction (Latent Space)
+        # Fit on current data (dynamic PCA)
+        activity = data['E'] # Time x Regions
+        reducer.fit(activity)
+        latent_traj = reducer.transform(activity)
+        
+        # Downsample trajectory for web
+        step = max(1, len(latent_traj) // 500)
+        
+        return {
+            "classification": asdict(state),
+            "latent_trajectory": {
+                "x": latent_traj[::step, 0].tolist(),
+                "y": latent_traj[::step, 1].tolist()
+            },
+            "metrics": metrics
+        }
+
+    def run_neurotherapy(self) -> Dict[str, Any]:
+        """
+        Run the AI Neurotherapy optimization loop.
+        """
+        result = self.optimizer.optimize_stimulation(target_metric='alpha')
+        return asdict(result)
+
+    def run_tuner_async(self) -> Dict[str, str]:
+        """Start auto-tuner in background thread."""
+        with self.lock:
+             if self.tuner_status == "running":
+                 return {"status": "error", "message": "Already running"}
+             self.tuner_status = "starting"
+        
+        self.tuner_thread = threading.Thread(target=self._tuner_worker)
+        self.tuner_thread.start()
+        return {"status": "started"}
+
+    def _tuner_worker(self):
+        """Worker thread for tuning."""
+        with self.lock:
+            self.tuner_status = "running"
+            
+        try:
+            # Run quick tuning
+            res = run_optimization(
+                self.brain, 
+                max_iters_lhs=15, 
+                max_iters_refine=20, 
+                duration=800.0, 
+                dt=0.3, # Coarse for speed
+                log_dir=Path("tuner_logs_gui")
+            )
+            
+            with self.lock:
+                self.tuner_status = "complete"
+                self.tuner_result = res
+        except Exception as e:
+            print(f"Tuner failed: {e}")
+            with self.lock:
+                self.tuner_status = "failed"
+                self.tuner_result = {"error": str(e)}
+
+    def get_tuner_status(self) -> Dict[str, Any]:
+        """Get current status and results."""
+        with self.lock:
+            return {
+                "status": self.tuner_status,
+                "result": self.tuner_result
+            }
+
+# Global instance
 # Global instance
 experiment_controller = ExperimentController()

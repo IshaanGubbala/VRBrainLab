@@ -580,6 +580,29 @@ class BrainVRServer:
             """Run dynamical regime sweep."""
             return jsonify(experiment_controller.run_regime_sweep())
 
+        @self.app.route('/api/experiments/ai_diagnostics', methods=['POST'])
+        def run_ai_diagnostics():
+            """Run AI Classifier and Autoencoder on current simulation."""
+            return jsonify(experiment_controller.analyze_simulation_ai())
+
+        @self.app.route('/api/experiments/therapy', methods=['POST'])
+        def run_therapy():
+            """Run AI Neurotherapy Optimization."""
+            return jsonify(experiment_controller.run_neurotherapy())
+
+        @self.app.route('/api/experiments/tune/start', methods=['POST'])
+        def start_tuner():
+            """Start async parameter tuning."""
+            return jsonify(experiment_controller.run_tuner_async())
+
+        @self.app.route('/api/experiments/tune/status', methods=['GET'])
+        def get_tuner_status():
+            """Get tuner status and result."""
+            return jsonify(experiment_controller.get_tuner_status())
+
+
+
+
 
     def run(self, debug: bool = False):
         """
